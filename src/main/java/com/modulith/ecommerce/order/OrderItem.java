@@ -32,14 +32,11 @@ public class OrderItem {
     @Column(name = "unit_price_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal unitPriceAmount;
 
-    @Column(name = "unit_price_currency", nullable = false, length = 3)
-    private String unitPriceCurrency;
 
-    public OrderItem(Long productId, Integer quantity, BigDecimal unitPriceAmount, String unitPriceCurrency) {
+    public OrderItem(Long productId, Integer quantity, BigDecimal unitPriceAmount) {
         this.productId = productId;
         this.quantity = quantity;
         this.unitPriceAmount = unitPriceAmount;
-        this.unitPriceCurrency = unitPriceCurrency;
     }
 
     public BigDecimal getTotalPrice() {

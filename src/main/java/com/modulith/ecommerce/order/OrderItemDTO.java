@@ -6,8 +6,7 @@ public record OrderItemDTO(
     Long id,
     Long productId,
     Integer quantity,
-    BigDecimal unitPriceAmount,
-    String unitPriceCurrency
+    BigDecimal unitPriceAmount
 ) {
 
     public static OrderItemDTO fromEntity(OrderItem item){
@@ -15,8 +14,7 @@ public record OrderItemDTO(
             item.getId(),
             item.getProductId(),
             item.getQuantity(),
-            item.getUnitPriceAmount(),
-            item.getUnitPriceCurrency()
+            item.getUnitPriceAmount()
         );
     }
 }

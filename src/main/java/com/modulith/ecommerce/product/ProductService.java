@@ -32,7 +32,6 @@ public class ProductService implements ProductModuleAPI {
                 productDTO.name(),
                 productDTO.description(),
                 productDTO.priceAmount(),
-                productDTO.priceCurrency(),
                 productDTO.stock(),
                 LocalDateTime.now(),
                 null
@@ -47,7 +46,6 @@ public class ProductService implements ProductModuleAPI {
                 productDTO.name(),
                 productDTO.description(),
                 productDTO.priceAmount(),
-                productDTO.priceCurrency(),
                 productDTO.stock(),
                 existingProduct.getCreatedAt(),
                 LocalDateTime.now()
@@ -72,7 +70,6 @@ public class ProductService implements ProductModuleAPI {
                 existingProduct.getName(),
                 existingProduct.getDescription(),
                 existingProduct.getPriceAmount(),
-                existingProduct.getPriceCurrency(),
                 newStock,
                 existingProduct.getCreatedAt(),
                 LocalDateTime.now()
@@ -89,7 +86,6 @@ public class ProductService implements ProductModuleAPI {
                 existingProduct.getName(),
                 existingProduct.getDescription(),
                 existingProduct.getPriceAmount(),
-                existingProduct.getPriceCurrency(),
                 newStock,
                 existingProduct.getCreatedAt(),
                 LocalDateTime.now()
@@ -138,7 +134,6 @@ public class ProductService implements ProductModuleAPI {
                         product.getName(),
                         product.getDescription(),
                         product.getPriceAmount(),
-                        product.getPriceCurrency(),
                         newStock,
                         product.getCreatedAt(),
                         LocalDateTime.now()
@@ -182,7 +177,6 @@ public class ProductService implements ProductModuleAPI {
                         product.getName(),
                         product.getDescription(),
                         product.getPriceAmount(),
-                        product.getPriceCurrency(),
                         newStock,
                         product.getCreatedAt(),
                         LocalDateTime.now()

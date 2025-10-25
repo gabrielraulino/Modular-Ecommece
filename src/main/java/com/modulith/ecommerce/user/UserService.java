@@ -90,13 +90,5 @@ public class UserService implements UserModuleAPI {
     @Override
     public Optional<UserDTO> findUserById(Long id) {
         return repository.findById(id).map(UserDTO::fromEntity);
-        // return Optional.of(repository.findById(id)
-        //         .map(user -> new UserDTO(
-        //                 user.getId(),
-        //                 user.getName(),
-        //                 user.getEmail(),
-        //                 user.getCreatedAt()
-        //         ))
-        // ).orElse(Optional.empty());
     }
 }

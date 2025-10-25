@@ -15,7 +15,6 @@ public record CheckoutEvent(
         Long userId,
         List<CheckoutItem> items,
         BigDecimal totalAmount,
-        String currency,
         LocalDateTime checkoutDate
 ) {
     /**
@@ -25,7 +24,6 @@ public record CheckoutEvent(
     public record CheckoutItem(
             Long productId,
             Integer quantity,
-            BigDecimal unitPrice,
-            String currency
+            BigDecimal unitPrice
     ) {}
 }

@@ -18,8 +18,6 @@ public record CartItemDTO(
         @Schema(description = "Unit price", example = "999.99")
         BigDecimal unitPrice,
         
-        @Schema(description = "Price currency", example = "USD")
-        String priceCurrency,
         
         @Schema(description = "Quantity in cart", example = "2")
         int quantity,

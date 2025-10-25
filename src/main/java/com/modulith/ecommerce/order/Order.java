@@ -28,8 +28,6 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "total_currency", nullable = false, length = 3)
-    private String totalCurrency;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

@@ -8,7 +8,6 @@ public record OrderDTO(
         Long id,
         Long userId,
         BigDecimal totalAmount,
-        String totalCurrency,
         OrderStatus status,
         LocalDateTime orderDate,
         List<OrderItemDTO> items
@@ -18,7 +17,6 @@ public record OrderDTO(
                 order.getId(),
                 order.getUserId(),
                 order.getTotalAmount(),
-                order.getTotalCurrency(),
                 order.getStatus(),
                 order.getOrderDate(),
                 items

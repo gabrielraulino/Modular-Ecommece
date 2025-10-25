@@ -27,8 +27,6 @@ public class Product {
     @Column(name = "price_amount")
     private final BigDecimal priceAmount;
 
-    @Column(name = "price_currency")
-    private final String priceCurrency;
 
     @Column(name = "stock")
     private final int stock;

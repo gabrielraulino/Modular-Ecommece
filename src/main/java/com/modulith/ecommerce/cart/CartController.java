@@ -13,7 +13,7 @@ public class CartController {
 
     @PostMapping
     public CartDTO addItem(@RequestBody addCartItemDTO cartData) {
-        return service.addItem(cartData);
+        return service.addOrUpdateItem(cartData);
     }
 
     @GetMapping
@@ -30,4 +30,9 @@ public class CartController {
     public CartDTO checkout(@PathVariable Long userId) {
         return service.checkout(userId);
     }
+
+//    @PutMapping("/{cartId}/items")
+//    public CartDTO updateCartItemQuantity(@PathVariable Long cartId, @RequestBody updateCartDTO cartDTO) {
+//        return service.updateCartItemQuantity(cartId, cartDTO);
+//    }
 }

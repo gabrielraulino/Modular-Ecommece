@@ -9,10 +9,8 @@ public record CreateProductDTO(
         String name,
         @Schema(description = "Product description", example = "Latest generation smartphone with advanced features", requiredMode = Schema.RequiredMode.REQUIRED)
         String description,
-        @Schema(description = "Product price", example = "999.99", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "Product price in BRL", example = "999.99", requiredMode = Schema.RequiredMode.REQUIRED)
         BigDecimal priceAmount,
-        @Schema(description = "Currency code", example = "USD", requiredMode = Schema.RequiredMode.REQUIRED)
-        String priceCurrency,
         @Schema(description = "Available stock quantity", example = "50", requiredMode = Schema.RequiredMode.REQUIRED)
         int stock
 ) {

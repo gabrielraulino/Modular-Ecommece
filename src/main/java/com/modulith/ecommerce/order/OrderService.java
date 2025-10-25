@@ -23,7 +23,7 @@ public class OrderService {
     private final OrderRepository repository;
 
     private final UserModuleAPI userModuleAPI;
-    
+
     private final ApplicationEventPublisher eventPublisher;
 
     public OrderDTO findById(Long id){
@@ -47,7 +47,7 @@ public class OrderService {
 
     /**
      * Cancela um pedido e publica evento para restaurar o estoque.
-     * 
+     *
      * @param orderId ID do pedido a ser cancelado
      * @return OrderDTO com status atualizado para CANCELLED
      */
@@ -101,9 +101,9 @@ public class OrderService {
      * - Usa @ApplicationModuleListener para processamento assíncrono e transacional
      * - Executa em uma nova transação (REQUIRES_NEW)
      * - É executado após o commit da transação original
-     * 
+     *
      * Este listener cria um pedido a partir dos dados do evento de checkout.
-     * 
+     *
      * @param event Evento de checkout publicado pelo módulo Cart
      */
     @ApplicationModuleListener
@@ -115,7 +115,6 @@ public class OrderService {
             Order order = new Order();
             order.setUserId(event.userId());
             order.setTotalAmount(event.totalAmount());
-            order.setTotalCurrency(event.currency());
             order.setStatus(OrderStatus.PENDING);
             order.setOrderDate(event.checkoutDate());
 
@@ -125,8 +124,7 @@ public class OrderService {
                         OrderItem orderItem = new OrderItem(
                                 item.productId(),
                                 item.quantity(),
-                                item.unitPrice(),
-                                item.currency()
+                                item.unitPrice()
                         );
                         orderItem.setOrder(order);
                         return orderItem;
@@ -138,9 +136,9 @@ public class OrderService {
             // Salvar o pedido
             Order savedOrder = repository.save(order);
 
-            log.info("Pedido criado com sucesso. ID: {}, Usuário: {}, Total: {} {}", 
-                    savedOrder.getId(), savedOrder.getUserId(), 
-                    savedOrder.getTotalAmount(), savedOrder.getTotalCurrency());
+            log.info("Pedido criado com sucesso. ID: {}, Usuário: {}, Total: {}",
+                    savedOrder.getId(), savedOrder.getUserId(),
+                    savedOrder.getTotalAmount());
 
         } catch (Exception e) {
             log.error("Erro ao processar evento de checkout para o usuário: {}", event.userId(), e);

@@ -40,7 +40,7 @@ public class CartService {
         return buildCartDTO(cart);
     }
 
-    public CartDTO addItem(addCartItemDTO cartData){
+    public CartDTO addOrUpdateItem(addCartItemDTO cartData){
         Optional<UserDTO> user = userModule.findUserById(cartData.userId());
         Optional<ProductDTO> productDTO = productModule.findProductById(cartData.productId());
         if (user.isEmpty()) {
@@ -59,7 +59,7 @@ public class CartService {
 
         if (existingItemOpt.isPresent()) {
             CartItem existingItem = existingItemOpt.get();
-            CartItem updatedItem = existingItem.updateQuantity(existingItem.getQuantity() + cartData.quantity());
+            CartItem updatedItem = existingItem.updateQuantity(cartData.quantity());
             cart.removeItem(existingItem);
             cart.addItem(updatedItem);
         } else {
@@ -89,16 +89,12 @@ public class CartService {
                 .map(CartItemDTO::subtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Pegar a moeda do primeiro ‘item’ (assumindo que todos são da mesma moeda)
-        String currency = enrichedItems.isEmpty() ? "USD" : enrichedItems.getFirst().priceCurrency();
-
         return new CartDTO(
                 cart.getId(),
                 cart.getUserId(),
                 enrichedItems,
                 totalQuantity,
                 totalPrice,
-                currency,
                 cart.getCreatedAt(),
                 cart.getUpdatedAt()
         );
@@ -119,7 +115,6 @@ public class CartService {
                 item.getProductId(),
                 product.name(),
                 product.priceAmount(),
-                product.priceCurrency(),
                 item.getQuantity(),
                 subtotal
         );
@@ -159,8 +154,7 @@ public class CartService {
                     return new CheckoutEvent.CheckoutItem(
                             item.getProductId(),
                             item.getQuantity(),
-                            product.priceAmount(),
-                            product.priceCurrency()
+                            product.priceAmount()
                     );
                 })
                 .collect(Collectors.toList());
@@ -170,15 +164,12 @@ public class CartService {
                 .map(item -> item.unitPrice().multiply(BigDecimal.valueOf(item.quantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        String currency = checkoutItems.isEmpty() ? "BRL" : checkoutItems.get(0).currency();
-
         // Publicar o evento de checkout
         CheckoutEvent event = new CheckoutEvent(
                 cart.getId(),
                 userId,
                 checkoutItems,
                 totalAmount,
-                currency,
                 LocalDateTime.now()
         );
 
@@ -186,10 +177,10 @@ public class CartService {
 
         // Limpar os itens do carrinho (orphanRemoval = true garantirá a exclusão do banco)
         cart.getItems().clear();
-        
+
         // Atualizar o updatedAt
         cart.setUpdatedAt(LocalDateTime.now());
-        
+
         // Salvar as alterações (itens serão excluídos do banco devido ao orphanRemoval)
         Cart clearedCart = repository.save(cart);
 
