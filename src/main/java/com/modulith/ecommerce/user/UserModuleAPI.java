@@ -10,4 +10,6 @@ public interface UserModuleAPI {
      * @return Optional containing user if found
      */
     Optional<UserDTO> findUserById(Long id);
+
+    void validateUserExists(Long id);
 }

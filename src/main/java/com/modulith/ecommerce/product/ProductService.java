@@ -61,23 +61,7 @@ public class ProductService implements ProductModuleAPI {
         }
     }
 
-    public ProductDTO updateProductQuantity(Long id, int qty) {
-        Product existingProduct = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Product not found"));
-        int newStock = validateStock(existingProduct.getStock() + qty);
-
-        Product updatedProduct = new Product(
-                existingProduct.getId(),
-                existingProduct.getName(),
-                existingProduct.getDescription(),
-                existingProduct.getPriceAmount(),
-                newStock,
-                existingProduct.getCreatedAt(),
-                LocalDateTime.now()
-        );
-        return ProductDTO.fromEntity(repository.save(updatedProduct));
-    }
-
-    public ProductDTO updateProductStockAbsolute(Long id, int newStock) {
+    public ProductDTO updateProductStock(Long id, int newStock) {
         validateStock(newStock);
 
         Product existingProduct = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Product not found"));
@@ -93,11 +77,10 @@ public class ProductService implements ProductModuleAPI {
         return ProductDTO.fromEntity(repository.save(updatedProduct));
     }
 
-    private int validateStock(int stock) {
+    private void validateStock(int stock) {
         if (stock < 0) {
-            throw new IllegalArgumentException("Stock cannot be negative");
+            throw new IllegalArgumentException("Product stock cannot be negative");
         }
-        return stock;
     }
 
     @Override
@@ -105,15 +88,22 @@ public class ProductService implements ProductModuleAPI {
         return repository.findById(productId).map(ProductDTO::fromEntity);
     }
 
+    @Override
+    public void validateProductExists(Long productId) {
+        if (repository.findById(productId).isEmpty()) {
+            throw new IllegalArgumentException("Product not found with id: " + productId);
+        }
+    }
+
     /**
      * Listener para decrementar estoque quando um checkout for realizado.
      * Este método é executado de forma assíncrona após o checkout ser concluído.
-     * 
+     *
      * @param event Evento de checkout contendo os itens comprados
      */
     @ApplicationModuleListener
     public void onCheckoutEvent(CheckoutEvent event) {
-        log.info("Processando atualização de estoque para checkout. Carrinho: {}, Usuário: {}", 
+        log.info("Processando atualização de estoque para checkout. Carrinho: {}, Usuário: {}",
                 event.cartId(), event.userId());
 
         try {
@@ -122,30 +112,14 @@ public class ProductService implements ProductModuleAPI {
                         .orElseThrow(() -> new RuntimeException("Product not found: " + item.productId()));
 
                 int newStock = product.getStock() - item.quantity();
-                
-                if (newStock < 0) {
-                    log.error("Estoque insuficiente para produto {}. Estoque atual: {}, Quantidade solicitada: {}", 
-                            product.getId(), product.getStock(), item.quantity());
-                    throw new RuntimeException("Estoque insuficiente para produto: " + product.getName());
-                }
 
-                Product updatedProduct = new Product(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPriceAmount(),
-                        newStock,
-                        product.getCreatedAt(),
-                        LocalDateTime.now()
-                );
+                updateProductStock(item.productId(), newStock);
 
-                repository.save(updatedProduct);
-                
-                log.info("Estoque atualizado para produto {}: {} -> {} (Decrementado: {})", 
+                log.info("Estoque atualizado para produto {}: {} -> {} (Decrementado: {})",
                         product.getId(), product.getStock(), newStock, item.quantity());
             }
 
-            log.info("Estoque atualizado com sucesso para {} produtos do carrinho {}", 
+            log.info("Estoque atualizado com sucesso para {} produtos do carrinho {}",
                     event.items().size(), event.cartId());
 
         } catch (Exception e) {
@@ -157,12 +131,12 @@ public class ProductService implements ProductModuleAPI {
     /**
      * Listener para incrementar estoque quando um pedido for cancelado.
      * Este método restaura o estoque dos produtos cancelados.
-     * 
+     *
      * @param event Evento de cancelamento contendo os itens a serem restaurados
      */
     @ApplicationModuleListener
     public void onOrderCancelledEvent(OrderCancelledEvent event) {
-        log.info("Processando restauração de estoque para pedido cancelado. Pedido: {}, Usuário: {}", 
+        log.info("Processando restauração de estoque para pedido cancelado. Pedido: {}, Usuário: {}",
                 event.orderId(), event.userId());
 
         try {
@@ -172,23 +146,13 @@ public class ProductService implements ProductModuleAPI {
 
                 int newStock = product.getStock() + item.quantity();
 
-                Product updatedProduct = new Product(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPriceAmount(),
-                        newStock,
-                        product.getCreatedAt(),
-                        LocalDateTime.now()
-                );
+                updateProductStock(item.productId(), newStock);
 
-                repository.save(updatedProduct);
-                
-                log.info("Estoque restaurado para produto {}: {} -> {} (Incrementado: {})", 
+                log.info("Estoque restaurado para produto {}: {} -> {} (Incrementado: {})",
                         product.getId(), product.getStock(), newStock, item.quantity());
             }
 
-            log.info("Estoque restaurado com sucesso para {} produtos do pedido {}", 
+            log.info("Estoque restaurado com sucesso para {} produtos do pedido {}",
                     event.items().size(), event.orderId());
 
         } catch (Exception e) {

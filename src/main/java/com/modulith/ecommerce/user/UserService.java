@@ -84,4 +84,9 @@ public class UserService implements UserModuleAPI {
     public Optional<UserDTO> findUserById(Long id) {
         return repository.findById(id).map(UserDTO::fromEntity);
     }
+
+    @Override
+    public void validateUserExists(Long id) {
+        repository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    }
 }

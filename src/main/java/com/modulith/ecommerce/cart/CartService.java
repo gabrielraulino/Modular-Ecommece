@@ -41,14 +41,9 @@ public class CartService {
     }
 
     public CartDTO addOrUpdateItem(addCartItemDTO cartData){
-        Optional<UserDTO> user = userModule.findUserById(cartData.userId());
-        Optional<ProductDTO> productDTO = productModule.findProductById(cartData.productId());
-        if (user.isEmpty()) {
-            throw new RuntimeException("User not found with id: " + cartData.userId());
-        }
-        if (productDTO.isEmpty()) {
-            throw new RuntimeException("Product not found with id: " + cartData.productId());
-        }
+        userModule.validateUserExists(cartData.userId());
+
+        productModule.validateProductExists(cartData.productId());
 
         Cart cart = repository.findCartByUserId(cartData.userId()).orElseGet(() ->{
             Cart newCart = new Cart(null, cartData.userId(), LocalDateTime.now(), null);
@@ -132,18 +127,14 @@ public class CartService {
      */
     @Transactional
     public CartDTO checkout(Long userId) {
+        // Verificar se o usuário existe
+        userModule.validateUserExists(userId);
+
         // Buscar o carrinho do usuário
-        Cart cart = repository.findCartByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
+        Cart cart = findCartByUser(userId);
 
         // Validar se o carrinho tem itens
-        if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("Cannot checkout an empty cart");
-        }
-
-        // Verificar se o usuário existe
-        userModule.findUserById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        validateCartEmpty(cart);
 
         // Construir os itens do checkout com informações dos produtos
         List<CheckoutEvent.CheckoutItem> checkoutItems = cart.getItems().stream()
@@ -175,6 +166,7 @@ public class CartService {
 
         eventPublisher.publishEvent(event);
 
+        CartDTO checkoutCart = buildCartDTO(cart);
         // Limpar os itens do carrinho (orphanRemoval = true garantirá a exclusão do banco)
         cart.getItems().clear();
 
@@ -182,9 +174,19 @@ public class CartService {
         cart.setUpdatedAt(LocalDateTime.now());
 
         // Salvar as alterações (itens serão excluídos do banco devido ao orphanRemoval)
-        Cart clearedCart = repository.save(cart);
+        repository.save(cart);
 
-        return buildCartDTO(clearedCart);
+        return checkoutCart;
     }
 
+    private Cart findCartByUser(Long userId) {
+        return repository.findCartByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
+    }
+
+    private void validateCartEmpty(Cart cart) {
+        if (cart.getItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty");
+        }
+    }
 }

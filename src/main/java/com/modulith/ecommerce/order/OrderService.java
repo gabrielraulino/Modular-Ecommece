@@ -55,17 +55,10 @@ public class OrderService {
     public OrderDTO cancelOrder(Long orderId) {
         log.info("Iniciando cancelamento do pedido: {}", orderId);
 
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        Order order = findOrderById(orderId);
 
         // Validar se o pedido pode ser cancelado
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new RuntimeException("Order is already cancelled");
-        }
-
-        if (order.getStatus() == OrderStatus.DELIVERED) {
-            throw new RuntimeException("Cannot cancel a delivered order");
-        }
+        validateOrderStatusToCancel(order);
 
         // Atualizar status do pedido
         order.setStatus(OrderStatus.CANCELLED);
@@ -101,7 +94,7 @@ public class OrderService {
      * - Usa @ApplicationModuleListener para processamento assíncrono e transacional
      * - Executa em uma nova transação (REQUIRES_NEW)
      * - É executado após o commit da transação original
-     *
+      *
      * Este listener cria um pedido a partir dos dados do evento de checkout.
      *
      * @param event Evento de checkout publicado pelo módulo Cart
@@ -143,6 +136,21 @@ public class OrderService {
         } catch (Exception e) {
             log.error("Erro ao processar evento de checkout para o usuário: {}", event.userId(), e);
             throw new RuntimeException("Falha ao criar pedido a partir do checkout", e);
+        }
+    }
+
+    private Order findOrderById(Long id){
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + id));
+    }
+
+    private void validateOrderStatusToCancel(Order order){
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new RuntimeException("Order is already cancelled");
+        }
+
+        if (order.getStatus() == OrderStatus.DELIVERED) {
+            throw new RuntimeException("Cannot cancel a delivered order");
         }
     }
 }

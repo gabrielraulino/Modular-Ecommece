@@ -35,13 +35,8 @@ public class ProductController {
         service.deleteProduct(id);
     }
 
-    @PatchMapping("/{id}/quantity")
-    public ProductDTO updateProductQuantity(@PathVariable Long id, @RequestParam int qty) {
-        return service.updateProductQuantity(id, qty);
-    }
-
     @PatchMapping("/{id}/stock")
     public ProductDTO updateProductStock(@PathVariable Long id, @RequestParam int stock) {
-        return service.updateProductStockAbsolute(id, stock);
+        return service.updateProductStock(id, stock);
     }
 }

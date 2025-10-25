@@ -5,4 +5,6 @@ import java.util.Optional;
 public interface ProductModuleAPI {
 
     Optional<ProductDTO> findProductById(Long productId);
+
+    void validateProductExists(Long productId);
 }
