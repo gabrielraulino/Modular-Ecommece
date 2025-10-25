@@ -39,12 +39,4 @@ public class OrderItem {
         this.unitPriceAmount = unitPriceAmount;
     }
 
-    public BigDecimal getTotalPrice() {
-        return unitPriceAmount.multiply(BigDecimal.valueOf(quantity));
-    }
-
-    public void updateQuantity(Integer newQuantity) {
-        this.quantity = newQuantity;
-    }
-
 }

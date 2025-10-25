@@ -15,13 +15,6 @@ import java.util.stream.Collectors;
 public class UserService implements UserModuleAPI {
     private final UserRepository repository;
 
-    public UserDTO findByUsername(String username) {
-        return repository.findAll().stream()
-                .filter(user -> user.getName().equals(username))
-                .findFirst().map(UserDTO::fromEntity)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
     public UserDTO findById(Long id) {
         return repository.findById(id).map(UserDTO::fromEntity).orElseThrow(() -> new RuntimeException("User not found"));
     }
