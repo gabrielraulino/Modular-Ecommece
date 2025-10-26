@@ -2,10 +2,14 @@ package com.modulith.ecommerce.product;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
+import com.modulith.ecommerce.exception.ResourceNotFoundException;
+import com.modulith.ecommerce.exception.ValidationException;
+import com.modulith.ecommerce.exception.InsufficientStockException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +23,9 @@ public class ProductService implements ProductModuleAPI {
     private final ProductRepository repository;
 
     public ProductDTO getProduct(Long id) {
-        return repository.findById(id).map(ProductDTO::fromEntity).orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        return repository.findById(id)
+                .map(ProductDTO::fromEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
     }
 
     public List<ProductDTO> getAllProducts() {
@@ -40,7 +46,8 @@ public class ProductService implements ProductModuleAPI {
     }
 
     public ProductDTO updateProduct(Long id, CreateProductDTO productDTO) {
-        Product existingProduct = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        Product existingProduct = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
         Product updatedProduct = new Product(
                 existingProduct.getId(),
                 productDTO.name(),
@@ -64,7 +71,9 @@ public class ProductService implements ProductModuleAPI {
     public ProductDTO updateProductStock(Long id, int newStock) {
         validateStock(newStock);
 
-        Product existingProduct = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        Product existingProduct = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+
         Product updatedProduct = new Product(
                 existingProduct.getId(),
                 existingProduct.getName(),
@@ -77,11 +86,6 @@ public class ProductService implements ProductModuleAPI {
         return ProductDTO.fromEntity(repository.save(updatedProduct));
     }
 
-    private void validateStock(int stock) {
-        if (stock < 0) {
-            throw new IllegalArgumentException("Product stock cannot be negative");
-        }
-    }
 
     @Override
     public Optional<ProductDTO> findProductById(Long productId) {
@@ -89,75 +93,83 @@ public class ProductService implements ProductModuleAPI {
     }
 
     @Override
-    public void validateProductExists(Long productId) {
-        if (repository.findById(productId).isEmpty()) {
-            throw new IllegalArgumentException("Product not found with id: " + productId);
+    public ProductDTO validateProductStock(Long productId, int requiredQuantity) {
+        Optional<Product> product = repository.findById(productId);
+
+        if (product.isEmpty()) {
+            throw new ResourceNotFoundException("Product", productId);
         }
+
+        if (product.get().getStock() < requiredQuantity) {
+            throw new InsufficientStockException(product.get().getName(), requiredQuantity, product.get().getStock());
+        }
+
+        return product.map(ProductDTO::fromEntity).get();
     }
 
-    /**
-     * Listener para decrementar estoque quando um checkout for realizado.
-     * Este método é executado de forma assíncrona após o checkout ser concluído.
-     *
-     * @param event Evento de checkout contendo os itens comprados
-     */
-    @ApplicationModuleListener
+
+    @TransactionalEventListener
     public void onCheckoutEvent(CheckoutEvent event) {
-        log.info("Processando atualização de estoque para checkout. Carrinho: {}, Usuário: {}",
+        log.info("Processing stock update for checkout. Cart: {}, User: {}",
                 event.cartId(), event.userId());
 
         try {
+
             for (CheckoutEvent.CheckoutItem item : event.items()) {
                 Product product = repository.findById(item.productId())
-                        .orElseThrow(() -> new RuntimeException("Product not found: " + item.productId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Product", item.productId()));
 
+                int oldStock = product.getStock();
                 int newStock = product.getStock() - item.quantity();
 
                 updateProductStock(item.productId(), newStock);
 
-                log.info("Estoque atualizado para produto {}: {} -> {} (Decrementado: {})",
-                        product.getId(), product.getStock(), newStock, item.quantity());
+                log.info("Stock updated for product {}: {} -> {} (Decremented by: {})",
+                        product.getId(), oldStock, newStock, item.quantity());
             }
 
-            log.info("Estoque atualizado com sucesso para {} produtos do carrinho {}",
+            log.info("Stock updated successfully for {} products in cart {}",
                     event.items().size(), event.cartId());
 
         } catch (Exception e) {
-            log.error("Erro ao atualizar estoque para checkout do carrinho: {}", event.cartId(), e);
-            throw new RuntimeException("Falha ao atualizar estoque após checkout", e);
+            log.error("Error updating stock for checkout cart: {}", event.cartId(), e);
+            // This will cause the entire transaction to rollback
+            throw new RuntimeException("Failed to update stock after checkout", e);
         }
     }
 
-    /**
-     * Listener para incrementar estoque quando um pedido for cancelado.
-     * Este método restaura o estoque dos produtos cancelados.
-     *
-     * @param event Evento de cancelamento contendo os itens a serem restaurados
-     */
     @ApplicationModuleListener
     public void onOrderCancelledEvent(OrderCancelledEvent event) {
-        log.info("Processando restauração de estoque para pedido cancelado. Pedido: {}, Usuário: {}",
+        log.info("Processing stock restoration for cancelled order. Order: {}, User: {}",
                 event.orderId(), event.userId());
 
         try {
             for (OrderCancelledEvent.CancelledItem item : event.items()) {
                 Product product = repository.findById(item.productId())
-                        .orElseThrow(() -> new RuntimeException("Product not found: " + item.productId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Product", item.productId()));
 
+                int oldStock = product.getStock();
                 int newStock = product.getStock() + item.quantity();
 
                 updateProductStock(item.productId(), newStock);
 
-                log.info("Estoque restaurado para produto {}: {} -> {} (Incrementado: {})",
-                        product.getId(), product.getStock(), newStock, item.quantity());
+                log.info("Stock restored for product {}: {} -> {} (Incremented by: {})",
+                        product.getId(), oldStock, newStock, item.quantity());
             }
 
-            log.info("Estoque restaurado com sucesso para {} produtos do pedido {}",
+            log.info("Stock restored successfully for {} products in order {}",
                     event.items().size(), event.orderId());
 
         } catch (Exception e) {
-            log.error("Erro ao restaurar estoque para pedido cancelado: {}", event.orderId(), e);
-            throw new RuntimeException("Falha ao restaurar estoque após cancelamento", e);
+            log.error("Error restoring stock for cancelled order: {}", event.orderId(), e);
+            throw new RuntimeException("Failed to restore stock after cancellation", e);
         }
     }
+
+    private void validateStock(int stock) {
+        if (stock < 0) {
+            throw new ValidationException("stock", String.valueOf(stock), "cannot be negative");
+        }
+    }
+
 }

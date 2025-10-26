@@ -6,5 +6,5 @@ public interface ProductModuleAPI {
 
     Optional<ProductDTO> findProductById(Long productId);
 
-    void validateProductExists(Long productId);
+    ProductDTO validateProductStock(Long productId, int requiredQuantity);
 }
