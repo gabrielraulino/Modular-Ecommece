@@ -1,5 +1,7 @@
 package com.modulith.ecommerce.user;
 
+import com.modulith.ecommerce.exception.DuplicateResourceException;
+import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +18,7 @@ public class UserService implements UserModuleAPI {
     private final UserRepository repository;
 
     public UserDTO findById(Long id) {
-        return repository.findById(id).map(UserDTO::fromEntity).orElseThrow(() -> new RuntimeException("User not found"));
+        return repository.findById(id).map(UserDTO::fromEntity).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
     public List<UserDTO> findAll() {
@@ -25,7 +27,7 @@ public class UserService implements UserModuleAPI {
 
     public UserDTO saveUser(UserCreateDTO user) {
         if (repository.findByEmail(user.email()).isPresent()) {
-            throw new RuntimeException("User already exists");
+            throw new DuplicateResourceException("User already exists");
         }
         User newUser = new User(
                 null,
@@ -38,7 +40,7 @@ public class UserService implements UserModuleAPI {
     }
 
     public UserDTO updateUser(Long id, UserCreateDTO user) {
-        User existingUser = repository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        User existingUser = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
 
         User updatedUser = new User(
                 existingUser.getId(),
@@ -52,12 +54,18 @@ public class UserService implements UserModuleAPI {
     }
 
     public void deleteUser(Long id) {
-        try {
-            findById(id);
-        } catch (RuntimeException e) {
-            throw new RuntimeException("User not found");
-        }
+        findById(id);
         repository.deleteById(id);
+    }
+
+    @Override
+    public Optional<UserDTO> findUserById(Long id) {
+        return repository.findById(id).map(UserDTO::fromEntity);
+    }
+
+    @Override
+    public void validateUserExists(Long id) {
+        repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
     private String hashPassword(String password) {
@@ -80,13 +88,4 @@ public class UserService implements UserModuleAPI {
         }
     }
 
-    @Override
-    public Optional<UserDTO> findUserById(Long id) {
-        return repository.findById(id).map(UserDTO::fromEntity);
-    }
-
-    @Override
-    public void validateUserExists(Long id) {
-        repository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-    }
 }
