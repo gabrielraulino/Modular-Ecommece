@@ -1,10 +1,10 @@
 package com.modulith.ecommerce.cart;
 
-
 import com.modulith.ecommerce.event.CheckoutEvent;
+import com.modulith.ecommerce.exception.ResourceNotFoundException;
+import com.modulith.ecommerce.exception.InvalidOperationException;
 import com.modulith.ecommerce.product.ProductDTO;
 import com.modulith.ecommerce.product.ProductModuleAPI;
-import com.modulith.ecommerce.user.UserDTO;
 import com.modulith.ecommerce.user.UserModuleAPI;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,24 +28,24 @@ public class CartService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public List<CartDTO> getAllCarts(){
+    public List<CartDTO> getAllCarts() {
         return repository.findAll().stream()
                 .map(this::buildCartDTO)
                 .collect(Collectors.toList());
     }
 
-    public CartDTO getCartUserById(Long id){
+    public CartDTO getCartUserById(Long id) {
         Cart cart = repository.findCartByUserId(id)
-                .orElseThrow(() -> new RuntimeException("Cart not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", id));
         return buildCartDTO(cart);
     }
 
-    public CartDTO addOrUpdateItem(addCartItemDTO cartData){
+    public CartDTO addOrUpdateItem(addCartItemDTO cartData) {
         userModule.validateUserExists(cartData.userId());
 
-        productModule.validateProductExists(cartData.productId());
+        productModule.validateProductStock(cartData.productId(), cartData.quantity());
 
-        Cart cart = repository.findCartByUserId(cartData.userId()).orElseGet(() ->{
+        Cart cart = repository.findCartByUserId(cartData.userId()).orElseGet(() -> {
             Cart newCart = new Cart(null, cartData.userId(), LocalDateTime.now(), null);
             return repository.save(newCart);
         });
@@ -62,7 +62,28 @@ public class CartService {
             cart.addItem(newItem);
         }
 
-        // Atualizar o updatedAt
+        // Update updatedAt
+        cart.setUpdatedAt(LocalDateTime.now());
+
+        Cart savedCart = repository.save(cart);
+        return buildCartDTO(savedCart);
+    }
+
+    public CartDTO updateItemQuantity(Long userId, PatchCartItemDTO cartData) {
+        Cart cart = findCartByUser(userId);
+
+        productModule.validateProductStock(cartData.productId(), cartData.quantity());
+
+        CartItem item = cart.getItems().stream()
+                .filter(i -> i.getProductId().equals(cartData.productId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("CartItem", "product_id", cartData.productId()));
+
+        CartItem updatedItem = item.updateQuantity(cartData.quantity());
+        cart.removeItem(item);
+        cart.addItem(updatedItem);
+
+        // Update updatedAt
         cart.setUpdatedAt(LocalDateTime.now());
 
         Cart savedCart = repository.save(cart);
@@ -74,12 +95,12 @@ public class CartService {
                 .map(this::buildCartItemDTO)
                 .collect(Collectors.toList());
 
-        // Calcular total de quantidade
+        // Calculate total quantity
         int totalQuantity = enrichedItems.stream()
                 .mapToInt(CartItemDTO::quantity)
                 .sum();
 
-        // Calcular preço total
+        // Calculate total price
         BigDecimal totalPrice = enrichedItems.stream()
                 .map(CartItemDTO::subtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -99,7 +120,7 @@ public class CartService {
         Optional<ProductDTO> productOpt = productModule.findProductById(item.getProductId());
 
         if (productOpt.isEmpty()) {
-            throw new RuntimeException("Product not found with id: " + item.getProductId());
+            throw new ResourceNotFoundException("Product", item.getProductId());
         }
 
         ProductDTO product = productOpt.get();
@@ -115,32 +136,18 @@ public class CartService {
         );
     }
 
-    /**
-     * Realiza o checkout do carrinho, publicando um evento para o módulo de pedidos.
-     * Seguindo as práticas do Spring Modulith, este método:
-     * 1. Valida o carrinho e verifica se há itens
-     * 2. Publica um CheckoutEvent com todos os dados necessários
-     * 3. Limpa o carrinho após o checkout
-     *
-     * @param userId ID do usuário que está fazendo o checkout
-     * @return CartDTO vazio após o checkout
-     */
+
     @Transactional
     public CartDTO checkout(Long userId) {
-        // Verificar se o usuário existe
         userModule.validateUserExists(userId);
 
-        // Buscar o carrinho do usuário
         Cart cart = findCartByUser(userId);
 
-        // Validar se o carrinho tem itens
         validateCartEmpty(cart);
 
-        // Construir os itens do checkout com informações dos produtos
         List<CheckoutEvent.CheckoutItem> checkoutItems = cart.getItems().stream()
                 .map(item -> {
-                    ProductDTO product = productModule.findProductById(item.getProductId())
-                            .orElseThrow(() -> new RuntimeException("Product not found with id: " + item.getProductId()));
+                    ProductDTO product = productModule.validateProductStock(item.getProductId(), item.getQuantity());
 
                     return new CheckoutEvent.CheckoutItem(
                             item.getProductId(),
@@ -150,12 +157,12 @@ public class CartService {
                 })
                 .collect(Collectors.toList());
 
-        // Calcular o total
+        // Calculate total amount
         BigDecimal totalAmount = checkoutItems.stream()
                 .map(item -> item.unitPrice().multiply(BigDecimal.valueOf(item.quantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Publicar o evento de checkout
+        // Publish checkout event
         CheckoutEvent event = new CheckoutEvent(
                 cart.getId(),
                 userId,
@@ -167,13 +174,11 @@ public class CartService {
         eventPublisher.publishEvent(event);
 
         CartDTO checkoutCart = buildCartDTO(cart);
-        // Limpar os itens do carrinho (orphanRemoval = true garantirá a exclusão do banco)
+        // Clean cart itens (orphanRemoval = true will handle the deletion)
         cart.getItems().clear();
 
-        // Atualizar o updatedAt
         cart.setUpdatedAt(LocalDateTime.now());
 
-        // Salvar as alterações (itens serão excluídos do banco devido ao orphanRemoval)
         repository.save(cart);
 
         return checkoutCart;
@@ -181,12 +186,13 @@ public class CartService {
 
     private Cart findCartByUser(Long userId) {
         return repository.findCartByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "user_id", userId));
     }
 
     private void validateCartEmpty(Cart cart) {
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("Cart is empty");
+            throw new InvalidOperationException("checkout", "cart is empty");
         }
     }
+
 }

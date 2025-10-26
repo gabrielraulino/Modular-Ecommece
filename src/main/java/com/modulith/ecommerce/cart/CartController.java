@@ -31,8 +31,12 @@ public class CartController {
         return service.checkout(userId);
     }
 
-//    @PutMapping("/{cartId}/items")
-//    public CartDTO updateCartItemQuantity(@PathVariable Long cartId, @RequestBody updateCartDTO cartDTO) {
-//        return service.updateCartItemQuantity(cartId, cartDTO);
-//    }
+    @PatchMapping("/{userId}/items")
+    public CartDTO patchItem(
+            @PathVariable Long userId,
+            @RequestParam PatchCartItemDTO itemDTO
+    ) {
+        return service.updateItemQuantity(userId, itemDTO);
+    }
+
 }
