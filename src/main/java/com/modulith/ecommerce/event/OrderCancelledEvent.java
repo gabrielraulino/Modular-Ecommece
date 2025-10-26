@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Evento de cancelamento de pedido.
- * Este evento é publicado quando um pedido é cancelado.
- * Os produtos terão seu estoque incrementado de volta.
+ * Order cancellation event.
+ * This event is published when an order is cancelled.
+ * Products will have their stock incremented back.
  */
 public record OrderCancelledEvent(
         Long orderId,
@@ -15,7 +15,7 @@ public record OrderCancelledEvent(
         LocalDateTime cancelledDate
 ) {
     /**
-     * Item cancelado que precisa ter o estoque restaurado.
+     * Cancelled item that needs to have its stock restored.
      */
     public record CancelledItem(
             Long productId,

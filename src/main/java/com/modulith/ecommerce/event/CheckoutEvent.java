@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Evento de checkout do carrinho.
- * Este evento é publicado quando um usuário finaliza o checkout do carrinho.
- * Seguindo as práticas do Spring Modulith, usamos um record imutável para transferir
- * os dados entre os módulos Cart e Order.
+ * Cart checkout event.
+ * This event is published when a user completes cart checkout.
+ * Following Spring Modulith practices, we use an immutable record to transfer
+ * data between Cart and Order modules.
  */
 public record CheckoutEvent(
         Long cartId,
@@ -18,8 +18,8 @@ public record CheckoutEvent(
         LocalDateTime checkoutDate
 ) {
     /**
-     * Item do checkout representando um produto e sua quantidade.
-     * Contém apenas os dados essenciais para reduzir o tamanho do evento serializado.
+     * Checkout item representing a product and its quantity.
+     * Contains only essential data to reduce serialized event size.
      */
     public record CheckoutItem(
             Long productId,
