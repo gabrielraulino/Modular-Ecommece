@@ -10,7 +10,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -22,7 +21,7 @@ public class UserService implements UserModuleAPI {
     }
 
     public List<UserDTO> findAll() {
-        return repository.findAll().stream().map(UserDTO::fromEntity).collect(Collectors.toList());
+        return repository.findAll().stream().map(UserDTO::fromEntity).toList();
     }
 
     public UserDTO saveUser(UserCreateDTO user) {

@@ -14,7 +14,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -29,7 +28,7 @@ public class ProductService implements ProductModuleAPI {
     }
 
     public List<ProductDTO> getAllProducts() {
-        return repository.findAll().stream().map(ProductDTO::fromEntity).collect(Collectors.toList());
+        return repository.findAll().stream().map(ProductDTO::fromEntity).toList();
     }
 
     public ProductDTO saveProduct(CreateProductDTO productDTO) {

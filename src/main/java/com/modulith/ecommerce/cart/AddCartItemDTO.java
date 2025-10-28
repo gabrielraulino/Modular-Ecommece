@@ -5,7 +5,7 @@ import lombok.Builder;
 
 @Builder
 @Schema(description = "Request to add product to cart")
-public record addCartItemDTO(
+public record AddCartItemDTO(
         @Schema(description = "User ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
         Long userId,
 

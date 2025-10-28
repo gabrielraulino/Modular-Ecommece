@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -31,7 +30,7 @@ public class CartService {
     public List<CartDTO> getAllCarts() {
         return repository.findAll().stream()
                 .map(this::buildCartDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public CartDTO getCartUserById(Long id) {
@@ -40,7 +39,7 @@ public class CartService {
         return buildCartDTO(cart);
     }
 
-    public CartDTO addOrUpdateItem(addCartItemDTO cartData) {
+    public CartDTO addOrUpdateItem(AddCartItemDTO cartData) {
         userModule.validateUserExists(cartData.userId());
 
         productModule.validateProductStock(cartData.productId(), cartData.quantity());
@@ -91,9 +90,10 @@ public class CartService {
     }
 
     private CartDTO buildCartDTO(Cart cart) {
-        List<CartItemDTO> enrichedItems = cart.getItems().stream()
+        List<CartItemDTO> enrichedItems = cart.getItems()
+                .stream()
                 .map(this::buildCartItemDTO)
-                .collect(Collectors.toList());
+                .toList();
 
         // Calculate total quantity
         int totalQuantity = enrichedItems.stream()
@@ -155,7 +155,7 @@ public class CartService {
                             product.priceAmount()
                     );
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         // Calculate total amount
         BigDecimal totalAmount = checkoutItems.stream()

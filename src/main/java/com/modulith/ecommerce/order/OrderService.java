@@ -36,16 +36,16 @@ public class OrderService {
     public List<OrderDTO> findByUserId(Long id){
         userModuleAPI.findUserById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
 
-        return repository.findByUserId(id).stream().map(this::buildOrderDTO).collect(Collectors.toList());
+        return repository.findByUserId(id).stream().map(this::buildOrderDTO).toList();
     }
 
 
     public List<OrderDTO> getAllOrders(){
-        return repository.findAll().stream().map(this::buildOrderDTO).collect(Collectors.toList());
+        return repository.findAll().stream().map(this::buildOrderDTO).toList();
     }
 
     private OrderDTO buildOrderDTO(Order order){
-        return OrderDTO.fromEntity(order, order.getItems().stream().map(OrderItemDTO::fromEntity).collect(Collectors.toList()));
+        return OrderDTO.fromEntity(order, order.getItems().stream().map(OrderItemDTO::fromEntity).toList());
     }
 
     @Transactional

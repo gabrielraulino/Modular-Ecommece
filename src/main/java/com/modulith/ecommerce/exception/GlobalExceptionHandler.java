@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -19,7 +21,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
 
-        System.out.println("GlobalExceptionHandler: Handling ResourceNotFoundException: " + ex.getMessage());
+        log.info("GlobalExceptionHandler: Handling ResourceNotFoundException: {}", ex.getMessage());
 
         Map<String, Object> body = createErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
@@ -104,8 +106,7 @@ public class GlobalExceptionHandler {
         );
 
         // Log real error for debugging
-        System.err.println("Unexpected error: " + ex.getMessage());
-        ex.printStackTrace();
+        log.error("Unexpected error", ex);
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }

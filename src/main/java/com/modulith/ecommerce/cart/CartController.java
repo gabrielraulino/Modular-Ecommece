@@ -12,7 +12,7 @@ public class CartController {
     private final CartService service;
 
     @PostMapping
-    public CartDTO addOrUpdateItem(@RequestBody addCartItemDTO cartData) {
+    public CartDTO addOrUpdateItem(@RequestBody AddCartItemDTO cartData) {
         return service.addOrUpdateItem(cartData);
     }
 
