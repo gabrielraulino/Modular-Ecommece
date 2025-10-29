@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -65,7 +64,7 @@ public class OrderService {
                         item.getProductId(),
                         item.getQuantity()
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         OrderCancelledEvent event = new OrderCancelledEvent(
                 order.getId(),
@@ -106,7 +105,7 @@ public class OrderService {
                         orderItem.setOrder(order);
                         return orderItem;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
 
             order.setItems(orderItems);
 
