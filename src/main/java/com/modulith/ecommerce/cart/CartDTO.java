@@ -22,8 +22,7 @@ public record CartDTO(
         
         @Schema(description = "Total price of all items", example = "2999.95")
         BigDecimal totalPrice,
-        
-        
+
         @Schema(description = "Cart creation date")
         LocalDateTime createdAt,
         

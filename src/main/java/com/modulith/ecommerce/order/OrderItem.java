@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Entity
 @AllArgsConstructor
 @Table(name = "order_items")
@@ -29,14 +27,9 @@ public class OrderItem {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "unit_price_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal unitPriceAmount;
-
-
-    public OrderItem(Long productId, Integer quantity, BigDecimal unitPriceAmount) {
+    public OrderItem(Long productId, Integer quantity) {
         this.productId = productId;
         this.quantity = quantity;
-        this.unitPriceAmount = unitPriceAmount;
     }
 
 }

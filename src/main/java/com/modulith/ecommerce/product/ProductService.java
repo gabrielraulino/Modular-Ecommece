@@ -1,19 +1,22 @@
 package com.modulith.ecommerce.product;
 
-import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
+import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.ValidationException;
 import com.modulith.ecommerce.exception.InsufficientStockException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -86,9 +89,32 @@ public class ProductService implements ProductModuleAPI {
     }
 
 
+    private Product updateProductStock(Product product, int newStock) {
+        validateStock(newStock);
+
+        Product updatedProduct = new Product(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPriceAmount(),
+                newStock,
+                product.getCreatedAt(),
+                LocalDateTime.now()
+        );
+        return repository.save(updatedProduct);
+    }
+
+
     @Override
     public Optional<ProductDTO> findProductById(Long productId) {
         return repository.findById(productId).map(ProductDTO::fromEntity);
+    }
+
+    @Override
+    public List<ProductDTO> findAllProductsByIds(Set<Long> productIds) {
+        return repository.findAllByIdIn(productIds).stream()
+                .map(ProductDTO::fromEntity)
+                .toList();
     }
 
     @Override
@@ -106,35 +132,49 @@ public class ProductService implements ProductModuleAPI {
         return product.map(ProductDTO::fromEntity).get();
     }
 
+    @Override
+    public void validateProductsStock(Map<Long, Integer> productQuantities) {
+        // receive to map of productId -> requiredQuantity to avoid multiple DB calls (n+1 problem)
 
-    @TransactionalEventListener
-    public void onCheckoutEvent(CheckoutEvent event) {
-        log.info("Processing stock update for checkout. Cart: {}, User: {}",
-                event.cartId(), event.userId());
+        List<Product> products = repository.findAllByIdIn(productQuantities.keySet());
 
-        try {
-
-            for (CheckoutEvent.CheckoutItem item : event.items()) {
-                Product product = repository.findById(item.productId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Product", item.productId()));
-
-                int oldStock = product.getStock();
-                int newStock = product.getStock() - item.quantity();
-
-                updateProductStock(item.productId(), newStock);
-
-                log.info("Stock updated for product {}: {} -> {} (Decremented by: {})",
-                        product.getId(), oldStock, newStock, item.quantity());
+        // fails in verify stock to avoid partial updates
+        products.forEach(product -> {
+            int requiredQuantity = productQuantities.get(product.getId());
+            if (product.getStock() < requiredQuantity) {
+                log.error("Product {} has stock less than required quantity", product.getId());
+                throw new InsufficientStockException(product.getName(), requiredQuantity, product.getStock());
             }
+        });
 
-            log.info("Stock updated successfully for {} products in cart {}",
-                    event.items().size(), event.cartId());
+    }
 
-        } catch (Exception e) {
-            log.error("Error updating stock for checkout cart: {}", event.cartId(), e);
-            // This will cause the entire transaction to rollback
-            throw new RuntimeException("Failed to update stock after checkout", e);
-        }
+    @EventListener
+    public void onCheckoutEvent(UpdateEvent event) {
+        log.info("Processing stock update for checkout. Cart: {}, User: {}",
+                event.cart(), event.user());
+
+        List<Product> products = repository.findAllByIdIn(event.productQuantities().keySet());
+
+        products.forEach(product -> {
+            int requiredQuantity = event.productQuantities().get(product.getId());
+            if (product.getStock() < requiredQuantity) {
+                throw new InsufficientStockException(product.getName(), requiredQuantity, product.getStock());
+            }
+        });
+
+        List<Product> updatedProducts = products.stream().map(product -> {
+            int requiredQuantity = event.productQuantities().get(product.getId());
+            int newStock = product.getStock() - requiredQuantity;
+            log.info("Stock updated for product {}: {} -> {} (Decremented by: {})",
+                    product.getId(), product.getStock(), newStock, requiredQuantity);
+            return updateProductStock(product, newStock);
+        }).toList();
+
+        log.info("Stock updated successfully for {} products in cart {}",
+                event.productQuantities().size(), event.cart());
+        repository.saveAll(updatedProducts);
+
     }
 
     @ApplicationModuleListener
@@ -142,15 +182,21 @@ public class ProductService implements ProductModuleAPI {
         log.info("Processing stock restoration for cancelled order. Order: {}, User: {}",
                 event.orderId(), event.userId());
 
+        Set<Long> productIds = event.items().stream().map(OrderCancelledEvent.CancelledItem::productId).collect(Collectors.toSet());
+
+        List<Product> products = repository.findAllByIdIn(productIds);
+
         try {
             for (OrderCancelledEvent.CancelledItem item : event.items()) {
-                Product product = repository.findById(item.productId())
+                Product product = products.stream()
+                        .filter(p -> p.getId().equals(item.productId()))
+                        .findFirst()
                         .orElseThrow(() -> new ResourceNotFoundException("Product", item.productId()));
 
                 int oldStock = product.getStock();
                 int newStock = product.getStock() + item.quantity();
 
-                updateProductStock(item.productId(), newStock);
+                updateProductStock(product, newStock);
 
                 log.info("Stock restored for product {}: {} -> {} (Incremented by: {})",
                         product.getId(), oldStock, newStock, item.quantity());

@@ -1,6 +1,5 @@
 package com.modulith.ecommerce.event;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -11,8 +10,7 @@ import java.util.List;
 public record OrderCancelledEvent(
         Long orderId,
         Long userId,
-        List<CancelledItem> items,
-        LocalDateTime cancelledDate
+        List<CancelledItem> items
 ) {
     /**
      * Cancelled item that needs to have its stock restored.

@@ -23,7 +23,7 @@ Sistema de e-commerce desenvolvido seguindo a arquitetura **Modular Monolith** u
 
 - ✅ **Arquitetura Modular**: Módulos independentes e desacoplados
 - ✅ **Event-Driven**: Comunicação via eventos de domínio
-- ✅ **Processamento Assíncrono**: Operações não-bloqueantes
+- ✅ **Processamento Síncrono**: Eventos processados na mesma transação (consistência garantida)
 - ✅ **Gerenciamento de Estoque**: Atualização automática via eventos
 - ✅ **Transactional Outbox**: Garantia de entrega de eventos
 - ✅ **RESTful API**: Endpoints bem definidos
@@ -139,14 +139,21 @@ Sistema de e-commerce desenvolvido seguindo a arquitetura **Modular Monolith** u
 
 **Event Listeners:**
 ```java
-@ApplicationModuleListener
-void onCheckoutEvent(CheckoutEvent event)
-// Decrementa estoque quando pedido é criado
+@EventListener
+void onCheckoutEvent(UpdateEvent event)
+// Decrementa estoque quando checkout é realizado
 
 @ApplicationModuleListener
 void onOrderCancelledEvent(OrderCancelledEvent event)
 // Incrementa estoque quando pedido é cancelado
 ```
+
+**API Pública:**
+- `ProductModuleAPI`: Interface para consultar produtos e validar estoque
+  - `findProductById(Long productId)`: Busca produto por ID
+  - `findAllProductsByIds(Set<Long> productIds)`: Busca múltiplos produtos (batch)
+  - `validateProductStock(Long productId, int requiredQuantity)`: Valida estoque de um produto
+  - `validateProductsStock(Map<Long, Integer> productQuantities)`: Valida estoque de múltiplos produtos (batch)
 
 ---
 
@@ -208,9 +215,10 @@ CANCELLED    // Cancelado
 
 **Event Listeners:**
 ```java
-@ApplicationModuleListener
+@EventListener
 void onCheckoutEvent(CheckoutEvent event)
 // Cria pedido quando checkout é realizado
+// Publica UpdateEvent para atualização de estoque
 ```
 
 ---
@@ -224,16 +232,29 @@ void onCheckoutEvent(CheckoutEvent event)
 #### CheckoutEvent
 ```java
 public record CheckoutEvent(
-    Long cartId,
-    Long userId,
-    List<CheckoutItem> items,
-    BigDecimal totalAmount,
-    String currency,
-    LocalDateTime checkoutDate
-)
+    Long cart,
+    Long user,
+    List<CheckoutItem> items
+) {
+    public record CheckoutItem(
+        Long product,
+        Integer quantity
+    ) {}
+}
 ```
 **Publicado por:** CartService.checkout()  
-**Consumido por:** OrderService (cria pedido), ProductService (decrementa estoque)
+**Consumido por:** OrderService (cria pedido e publica UpdateEvent)
+
+#### UpdateEvent
+```java
+public record UpdateEvent(
+    Long cart,
+    Long user,
+    Map<Long, Integer> productQuantities
+) {}
+```
+**Publicado por:** OrderService.onCheckoutEvent()  
+**Consumido por:** ProductService (decrementa estoque)
 
 #### OrderCancelledEvent
 ```java
@@ -254,24 +275,28 @@ public record OrderCancelledEvent(
 ### Fluxo de Checkout
 
 ```
-1. Cliente → POST /api/carts/user/{userId}/checkout
+1. Cliente → POST /carts/user/{userId}/checkout
                     ↓
-2. CartService publica CheckoutEvent
+2. CartService valida estoque (validateProductsStock)
                     ↓
-        ┌───────────┴───────────┐
-        ↓                       ↓
-3a. OrderService         3b. ProductService
-    escuta evento            escuta evento
-        ↓                       ↓
-4a. Cria Order          4b. Decrementa estoque
-        ↓                       ↓
-5. Cliente ← Carrinho vazio (resposta imediata)
+3. CartService publica CheckoutEvent
+                    ↓
+4. OrderService.onCheckoutEvent() escuta evento
+   ├─ Cria Order
+   └─ Publica UpdateEvent
+                    ↓
+5. ProductService.onCheckoutEvent() escuta UpdateEvent
+   └─ Decrementa estoque (batch update)
+                    ↓
+6. Cliente ← Carrinho vazio (resposta imediata)
 ```
+
+**Nota:** O processamento é síncrono usando `@EventListener`, garantindo que falhas causem rollback da transação.
 
 ### Fluxo de Cancelamento
 
 ```
-1. Cliente → POST /api/orders/{id}/cancel
+1. Cliente → POST /orders/{id}/cancel
                     ↓
 2. OrderService atualiza status → CANCELLED
                     ↓
@@ -292,11 +317,11 @@ public record OrderCancelledEvent(
 
 | Método | Endpoint | Descrição | Body |
 |--------|----------|-----------|------|
-| **POST** | `/api/users` | Criar usuário | `UserCreateDTO` |
-| **GET** | `/api/users` | Listar todos usuários | - |
-| **GET** | `/api/users/{id}` | Buscar usuário por ID | - |
-| **PUT** | `/api/users/{id}` | Atualizar usuário | `UserCreateDTO` |
-| **DELETE** | `/api/users/{id}` | Deletar usuário | - |
+| **POST** | `/users` | Criar usuário | `UserCreateDTO` |
+| **GET** | `/users` | Listar todos usuários | - |
+| **GET** | `/users/{id}` | Buscar usuário por ID | - |
+| **PUT** | `/users/{id}` | Atualizar usuário | `UserCreateDTO` |
+| **DELETE** | `/users/{id}` | Deletar usuário | - |
 
 **UserCreateDTO:**
 ```json
@@ -313,13 +338,12 @@ public record OrderCancelledEvent(
 
 | Método | Endpoint | Descrição | Body |
 |--------|----------|-----------|------|
-| **POST** | `/api/products` | Criar produto | `CreateProductDTO` |
-| **GET** | `/api/products` | Listar todos produtos | - |
-| **GET** | `/api/products/{id}` | Buscar produto por ID | - |
-| **PUT** | `/api/products/{id}` | Atualizar produto | `CreateProductDTO` |
-| **DELETE** | `/api/products/{id}` | Deletar produto | - |
-| **PATCH** | `/api/products/{id}/quantity?qty={int}` | Atualizar quantidade (relativo) | - |
-| **PATCH** | `/api/products/{id}/stock?stock={int}` | Atualizar estoque (absoluto) | - |
+| **POST** | `/products` | Criar produto | `CreateProductDTO` |
+| **GET** | `/products` | Listar todos produtos | - |
+| **GET** | `/products/{id}` | Buscar produto por ID | - |
+| **PUT** | `/products/{id}` | Atualizar produto | `CreateProductDTO` |
+| **DELETE** | `/products/{id}` | Deletar produto | - |
+| **PATCH** | `/products/{id}/stock?stock={int}` | Atualizar estoque (absoluto) | - |
 
 **CreateProductDTO:**
 ```json
@@ -338,10 +362,10 @@ public record OrderCancelledEvent(
 
 | Método | Endpoint | Descrição | Body |
 |--------|----------|-----------|------|
-| **POST** | `/api/carts` | Adicionar item ao carrinho | `addCartItemDTO` |
-| **GET** | `/api/carts` | Listar todos carrinhos | - |
-| **GET** | `/api/carts/user/{userId}` | Buscar carrinho do usuário | - |
-| **POST** | `/api/carts/user/{userId}/checkout` | ⭐ **Realizar checkout** | - |
+| **POST** | `/carts` | Adicionar item ao carrinho | `addCartItemDTO` |
+| **GET** | `/carts` | Listar todos carrinhos | - |
+| **GET** | `/carts/user/{userId}` | Buscar carrinho do usuário | - |
+| **POST** | `/carts/user/{userId}/checkout` | ⭐ **Realizar checkout** | - |
 
 **addCartItemDTO:**
 ```json
@@ -382,10 +406,10 @@ public record OrderCancelledEvent(
 
 | Método | Endpoint | Descrição | Body |
 |--------|----------|-----------|------|
-| **GET** | `/api/orders/all` | Listar todos pedidos | - |
-| **GET** | `/api/orders/{id}` | Buscar pedido por ID | - |
-| **GET** | `/api/orders/user/{userId}` | Listar pedidos do usuário | - |
-| **POST** | `/api/orders/{id}/cancel` | ⭐ **Cancelar pedido** | - |
+| **GET** | `/orders/all` | Listar todos pedidos | - |
+| **GET** | `/orders/{id}` | Buscar pedido por ID | - |
+| **GET** | `/orders/user/{userId}` | Listar pedidos do usuário | - |
+| **POST** | `/orders/{id}/cancel` | ⭐ **Cancelar pedido** | - |
 
 **Resposta OrderDTO:**
 ```json
@@ -520,7 +544,7 @@ mvn spring-boot:run
 
 #### 1. Criar Usuário
 ```bash
-curl -X POST http://localhost:8080/api/users \
+curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
   -d '{
     "name": "João Silva",
@@ -533,7 +557,7 @@ curl -X POST http://localhost:8080/api/users \
 
 #### 2. Criar Produto
 ```bash
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Notebook Dell",
@@ -548,11 +572,11 @@ curl -X POST http://localhost:8080/api/products \
 
 #### 3. Adicionar ao Carrinho
 ```bash
-curl -X POST http://localhost:8080/api/carts \
+curl -X POST http://localhost:8080/carts \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": 1,
-    "productId": 1,
+    "user": 1,
+    "product": 1,
     "quantity": 2
   }'
 
@@ -561,18 +585,18 @@ curl -X POST http://localhost:8080/api/carts \
 
 #### 4. Verificar Carrinho
 ```bash
-curl http://localhost:8080/api/carts/user/1
+curl http://localhost:8080/carts/user/1
 
 # Resposta: 
 # {
-#   "items": [{"productId": 1, "quantity": 2, "subtotal": 7000.00}],
+#   "items": [{"product": 1, "quantity": 2, "subtotal": 7000.00}],
 #   "totalPrice": 7000.00
 # }
 ```
 
 #### 5. Realizar Checkout
 ```bash
-curl -X POST http://localhost:8080/api/carts/user/1/checkout
+curl -X POST http://localhost:8080/carts/user/1/checkout
 
 # Resposta: Carrinho vazio
 # {
@@ -583,11 +607,15 @@ curl -X POST http://localhost:8080/api/carts/user/1/checkout
 ```
 
 **O que acontece nos bastidores:**
-1. ✅ CheckoutEvent publicado
-2. ✅ OrderService cria pedido (assíncrono)
-3. ✅ ProductService decrementa estoque (assíncrono)
-4. ✅ Carrinho limpo (cart_items deletados)
-5. ✅ Cliente recebe resposta imediata
+1. ✅ Validação de estoque (validateProductsStock)
+2. ✅ CheckoutEvent publicado
+3. ✅ OrderService cria pedido (síncrono via @EventListener)
+4. ✅ UpdateEvent publicado pelo OrderService
+5. ✅ ProductService decrementa estoque (síncrono via @EventListener)
+6. ✅ Carrinho limpo (cart_items deletados via orphanRemoval)
+7. ✅ Cliente recebe resposta imediata
+
+**Importante:** Se qualquer etapa falhar, toda a transação faz rollback, garantindo consistência.
 
 #### 6. Aguardar Processamento
 ```bash
@@ -597,7 +625,7 @@ sleep 2
 
 #### 7. Verificar Pedido Criado
 ```bash
-curl http://localhost:8080/api/orders/user/1
+curl http://localhost:8080/orders/user/1
 
 # Resposta:
 # [
@@ -605,14 +633,14 @@ curl http://localhost:8080/api/orders/user/1
 #     "id": 1,
 #     "status": "PENDING",
 #     "totalAmount": 7000.00,
-#     "items": [{"productId": 1, "quantity": 2}]
+#     "items": [{"product": 1, "quantity": 2}]
 #   }
 # ]
 ```
 
 #### 8. Verificar Estoque Decrementado
 ```bash
-curl http://localhost:8080/api/products/1
+curl http://localhost:8080/products/1
 
 # Resposta:
 # {
@@ -624,7 +652,7 @@ curl http://localhost:8080/api/products/1
 
 #### 9. Cancelar Pedido
 ```bash
-curl -X POST http://localhost:8080/api/orders/1/cancel
+curl -X POST http://localhost:8080/orders/1/cancel
 
 # Resposta:
 # {
@@ -639,7 +667,7 @@ curl -X POST http://localhost:8080/api/orders/1/cancel
 # Aguardar eventos
 sleep 2
 
-curl http://localhost:8080/api/products/1
+curl http://localhost:8080/products/1
 
 # Resposta:
 # {
@@ -658,11 +686,11 @@ curl http://localhost:8080/api/products/1
 # Produto com estoque = 5
 # Tentar comprar 10
 
-curl -X POST http://localhost:8080/api/carts \
+curl -X POST http://localhost:8080/carts \
   -H "Content-Type: application/json" \
-  -d '{"userId": 1, "productId": 1, "quantity": 10}'
+  -d '{"user": 1, "product": 1, "quantity": 10}'
 
-curl -X POST http://localhost:8080/api/carts/user/1/checkout
+curl -X POST http://localhost:8080/carts/user/1/checkout
 
 # Resultado: Erro após 2 segundos
 # "Estoque insuficiente para produto: Notebook Dell"
@@ -671,7 +699,7 @@ curl -X POST http://localhost:8080/api/carts/user/1/checkout
 #### Cenário 2: Carrinho Vazio
 ```bash
 # Tentar checkout sem itens
-curl -X POST http://localhost:8080/api/carts/user/1/checkout
+curl -X POST http://localhost:8080/carts/user/1/checkout
 
 # Resultado: Erro imediato
 # "Cannot checkout an empty cart"
@@ -680,7 +708,7 @@ curl -X POST http://localhost:8080/api/carts/user/1/checkout
 #### Cenário 3: Cancelar Pedido Entregue
 ```bash
 # Pedido com status DELIVERED
-curl -X POST http://localhost:8080/api/orders/1/cancel
+curl -X POST http://localhost:8080/orders/1/cancel
 
 # Resultado: Erro
 # "Cannot cancel a delivered order"
@@ -694,10 +722,11 @@ curl -X POST http://localhost:8080/api/orders/1/cancel
 
 **Durante Checkout:**
 ```
-INFO - Processando atualização de estoque para checkout. Carrinho: 1, Usuário: 1
-INFO - Estoque atualizado para produto 1: 50 -> 48 (Decrementado: 2)
-INFO - Recebido evento de checkout para o usuário: 1, carrinho: 1
-INFO - Pedido criado com sucesso. ID: 1, Usuário: 1, Total: 7000.00 BRL
+INFO - Received checkout event for user: 1, cart: 1
+INFO - Processing stock update for checkout. Cart: 1, User: 1
+INFO - Stock updated for product 1: 50 -> 48 (Decremented by: 2)
+INFO - Stock updated successfully for 1 products in cart 1
+INFO - Order created successfully. ID: 1, User: 1
 ```
 
 **Durante Cancelamento:**
@@ -858,7 +887,9 @@ A aplicação possui documentação interativa via Swagger UI.
 
 **orphanRemoval**: Recurso JPA que remove entidades órfãs automaticamente
 
-**ApplicationModuleListener**: Anotação do Spring Modulith para listeners assíncronos
+**@EventListener**: Anotação do Spring para listeners síncronos (processamento na mesma transação)
+
+**@ApplicationModuleListener**: Anotação do Spring Modulith para listeners assíncronos (usado apenas para cancelamento de pedidos)
 
 **DTO (Data Transfer Object)**: Objeto para transferência de dados entre camadas
 

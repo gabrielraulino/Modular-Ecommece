@@ -17,8 +17,7 @@ public record CartItemDTO(
         
         @Schema(description = "Unit price", example = "999.99")
         BigDecimal unitPrice,
-        
-        
+
         @Schema(description = "Quantity in cart", example = "2")
         int quantity,
         

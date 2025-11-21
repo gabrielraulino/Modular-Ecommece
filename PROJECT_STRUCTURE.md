@@ -104,6 +104,7 @@ src/main/java/com/modulith/ecommerce/
 │
 └── 📡 event/                                    [Eventos de Domínio]
     ├── CheckoutEvent.java                       [Evento de checkout] ⭐
+    ├── UpdateEvent.java                         [Evento de atualização de estoque] ⭐
     └── OrderCancelledEvent.java                 [Evento de cancelamento] ⭐
 ```
 
@@ -125,16 +126,29 @@ public class EcommerceApplication {
 ### 2. CheckoutEvent.java ⭐
 ```java
 public record CheckoutEvent(
-    Long cartId,
-    Long userId,
-    List<CheckoutItem> items,
-    BigDecimal totalAmount,
-    String currency,
-    LocalDateTime checkoutDate
-)
+    Long cart,
+    Long user,
+    List<CheckoutItem> items
+) {
+    public record CheckoutItem(
+        Long product,
+        Integer quantity
+    ) {}
+}
 ```
 **Função:** Evento publicado quando checkout é realizado  
-**Consumido por:** OrderService, ProductService
+**Consumido por:** OrderService (cria pedido e publica UpdateEvent)
+
+### 2.1. UpdateEvent.java ⭐
+```java
+public record UpdateEvent(
+    Long cart,
+    Long user,
+    Map<Long, Integer> productQuantities
+) {}
+```
+**Função:** Evento publicado pelo OrderService para atualização de estoque  
+**Consumido por:** ProductService (decrementa estoque)
 
 ---
 
@@ -168,23 +182,24 @@ public CartDTO checkout(Long userId) {
 
 ### 5. OrderService.onCheckoutEvent() ⭐
 ```java
-@ApplicationModuleListener
+@EventListener
 public void onCheckoutEvent(CheckoutEvent event) {
     // Cria pedido a partir do evento
+    // Publica UpdateEvent para atualização de estoque
 }
 ```
-**Função:** Listener que cria pedido automaticamente
+**Função:** Listener que cria pedido automaticamente (processamento síncrono)
 
 ---
 
 ### 6. ProductService.onCheckoutEvent() ⭐
 ```java
-@ApplicationModuleListener
-public void onCheckoutEvent(CheckoutEvent event) {
-    // Decrementa estoque dos produtos
+@EventListener
+public void onCheckoutEvent(UpdateEvent event) {
+    // Decrementa estoque dos produtos (batch update)
 }
 ```
-**Função:** Listener que atualiza estoque no checkout
+**Função:** Listener que atualiza estoque no checkout (processamento síncrono)
 
 ---
 
@@ -291,17 +306,20 @@ public void onOrderCancelledEvent(OrderCancelledEvent event) {
    ↓ checkout(userId)
 3. CartService
    ├─ Valida carrinho
-   ├─ Publica CheckoutEvent → event_publication
-   ├─ Limpa cart_items (DELETE)
+   ├─ Valida estoque (validateProductsStock - batch)
+   ├─ Publica CheckoutEvent
+   ├─ Limpa cart_items (orphanRemoval)
    └─ Atualiza carts.updated_at
    ↓
-4. Spring Modulith
-   ├─→ OrderService.onCheckoutEvent()
-   │   └─ INSERT INTO orders, order_items
-   │
-   └─→ ProductService.onCheckoutEvent()
-       └─ UPDATE products SET stock = stock - quantity
+4. OrderService.onCheckoutEvent() (@EventListener - síncrono)
+   ├─ Cria Order e OrderItems
+   └─ Publica UpdateEvent
+   ↓
+5. ProductService.onCheckoutEvent() (@EventListener - síncrono)
+   └─ UPDATE products SET stock = stock - quantity (batch)
 ```
+
+**Nota:** Processamento síncrono garante que falhas causem rollback completo da transação.
 
 ### Cancel Flow
 
@@ -388,7 +406,7 @@ server.port=8080
 
 ### REST API
 ```
-http://localhost:8080/api/
+http://localhost:8080
 ├── users/
 ├── products/
 ├── carts/
@@ -463,7 +481,8 @@ http://localhost:8080/v3/api-docs
 - `@Service` para serviços
 - `@RestController` para controllers
 - `@Repository` para repositories
-- `@ApplicationModuleListener` para event listeners
+- `@EventListener` para event listeners síncronos (checkout)
+- `@ApplicationModuleListener` para event listeners assíncronos (cancelamento)
 - `@Transactional` para métodos transacionais
 
 ---

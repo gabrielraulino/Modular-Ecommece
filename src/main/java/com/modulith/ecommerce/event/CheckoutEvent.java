@@ -11,19 +11,16 @@ import java.util.List;
  * data between Cart and Order modules.
  */
 public record CheckoutEvent(
-        Long cartId,
-        Long userId,
-        List<CheckoutItem> items,
-        BigDecimal totalAmount,
-        LocalDateTime checkoutDate
+        Long cart,
+        Long user,
+        List<CheckoutItem> items
 ) {
     /**
      * Checkout item representing a product and its quantity.
      * Contains only essential data to reduce serialized event size.
      */
     public record CheckoutItem(
-            Long productId,
-            Integer quantity,
-            BigDecimal unitPrice
+            Long product,
+            Integer quantity
     ) {}
 }

@@ -1,6 +1,7 @@
 package com.modulith.ecommerce.cart;
 
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 public class CartController {
     private final CartService service;
 
-    @PostMapping
+    @PutMapping
     public CartDTO addOrUpdateItem(@RequestBody AddCartItemDTO cartData) {
         return service.addOrUpdateItem(cartData);
     }
@@ -27,16 +28,8 @@ public class CartController {
     }
 
     @PostMapping("/user/{userId}/checkout")
-    public CartDTO checkout(@PathVariable Long userId) {
+    public ResponseEntity<String> checkout(@PathVariable Long userId) {
         return service.checkout(userId);
-    }
-
-    @PatchMapping("/{userId}/items")
-    public CartDTO patchItem(
-            @PathVariable Long userId,
-            @RequestParam PatchCartItemDTO itemDTO
-    ) {
-        return service.updateItemQuantity(userId, itemDTO);
     }
 
 }

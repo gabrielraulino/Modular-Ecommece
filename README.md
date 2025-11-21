@@ -15,7 +15,7 @@ Aplicação modular que implementa um e-commerce completo com:
 - ✅ Sistema de pedidos
 - ✅ Atualização automática de estoque via eventos
 - ✅ Arquitetura event-driven
-- ✅ Processamento assíncrono
+- ✅ Processamento síncrono com garantia de consistência transacional
 
 ## 🏗️ Arquitetura
 
@@ -76,7 +76,7 @@ mvn spring-boot:run
 ### 1. Carrinho de Compras
 ```bash
 # Adicionar produto
-POST /api/carts
+POST /carts
 {
   "userId": 1,
   "productId": 1,
@@ -84,7 +84,7 @@ POST /api/carts
 }
 
 # Fazer checkout
-POST /api/carts/user/1/checkout
+POST /carts/user/1/checkout
 ```
 
 ### 2. Gerenciamento de Estoque
@@ -98,10 +98,10 @@ POST /api/carts/user/1/checkout
 ### 3. Pedidos
 ```bash
 # Listar pedidos do usuário
-GET /api/orders/user/1
+GET /orders/user/1
 
 # Cancelar pedido
-POST /api/orders/1/cancel
+POST /orders/1/cancel
 ```
 
 ## 🔄 Fluxo de Eventos
@@ -109,8 +109,9 @@ POST /api/orders/1/cancel
 ### Checkout
 ```
 Cliente → Checkout → CheckoutEvent
-                    ├─► OrderService (cria pedido)
-                    └─► ProductService (decrementa estoque)
+                    └─► OrderService (cria pedido)
+                        └─► UpdateEvent
+                            └─► ProductService (decrementa estoque)
 ```
 
 ### Cancelamento
@@ -122,50 +123,50 @@ Cliente → Cancel → OrderCancelledEvent
 ## 📊 API Endpoints
 
 ### Usuários
-- `POST /api/users` - Criar usuário
-- `GET /api/users/{id}` - Buscar usuário
-- `GET /api/users` - Listar usuários
+- `POST /users` - Criar usuário
+- `GET /users/{id}` - Buscar usuário
+- `GET /users` - Listar usuários
 
 ### Produtos
-- `POST /api/products` - Criar produto
-- `GET /api/products/{id}` - Buscar produto
-- `GET /api/products` - Listar produtos
-- `PATCH /api/products/{id}/quantity?qty={n}` - Atualizar quantidade
+- `POST /products` - Criar produto
+- `GET /products/{id}` - Buscar produto
+- `GET /products` - Listar produtos
+- `PATCH /products/{id}/stock?stock={n}` - Atualizar estoque
 
 ### Carrinho
-- `POST /api/carts` - Adicionar item
-- `GET /api/carts/user/{userId}` - Buscar carrinho
-- `POST /api/carts/user/{userId}/checkout` - **Checkout**
+- `POST /carts` - Adicionar item
+- `GET /carts/user/{userId}` - Buscar carrinho
+- `POST /carts/user/{userId}/checkout` - **Checkout**
 
 ### Pedidos
-- `GET /api/orders/user/{userId}` - Listar pedidos
-- `GET /api/orders/{id}` - Buscar pedido
-- `POST /api/orders/{id}/cancel` - **Cancelar pedido**
+- `GET /orders/user/{userId}` - Listar pedidos
+- `GET /orders/{id}` - Buscar pedido
+- `POST /orders/{id}/cancel` - **Cancelar pedido**
 
 ## 🧪 Exemplo de Uso
 
 ```bash
 # 1. Criar usuário
-curl -X POST http://localhost:8080/api/users \
+curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
   -d '{"name": "João", "email": "joao@email.com", "password": "123"}'
 
 # 2. Criar produto
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/products \
   -H "Content-Type: application/json" \
   -d '{"name": "Notebook", "priceAmount": 3000, "priceCurrency": "BRL", "stock": 10}'
 
 # 3. Adicionar ao carrinho
-curl -X POST http://localhost:8080/api/carts \
+curl -X POST http://localhost:8080/carts \
   -H "Content-Type: application/json" \
-  -d '{"userId": 1, "productId": 1, "quantity": 2}'
+  -d '{"user": 1, "product": 1, "quantity": 2}'
 
 # 4. Fazer checkout
-curl -X POST http://localhost:8080/api/carts/user/1/checkout
+curl -X POST http://localhost:8080/carts/user/1/checkout
 
 # 5. Verificar pedido (aguardar 2s)
 sleep 2
-curl http://localhost:8080/api/orders/user/1
+curl http://localhost:8080/orders/user/1
 ```
 
 ## 🛠️ Tecnologias
@@ -183,7 +184,7 @@ curl http://localhost:8080/api/orders/user/1
 - ✅ **Domain-Driven Design (DDD)** - Bounded contexts
 - ✅ **Event-Driven Architecture** - Comunicação via eventos
 - ✅ **CQRS** - Separação de comandos e queries
-- ✅ **Transactional Outbox** - Garantia de entrega de eventos
+- ✅ **Transactional Consistency** - Eventos processados na mesma transação (@EventListener)
 - ✅ **Repository Pattern** - Abstração de dados
 - ✅ **DTO Pattern** - Transferência de dados
 
@@ -196,8 +197,8 @@ curl http://localhost:8080/api/orders/user/1
 
 ### Estoque
 - **Adicionar ao carrinho**: Não afeta estoque
-- **Checkout**: Decrementa estoque automaticamente
-- **Cancelar pedido**: Restaura estoque automaticamente
+- **Checkout**: Valida estoque antes e decrementa automaticamente (via UpdateEvent)
+- **Cancelar pedido**: Restaura estoque automaticamente (via OrderCancelledEvent)
 
 ### Pedidos
 - Status: `PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`

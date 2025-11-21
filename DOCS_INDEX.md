@@ -80,6 +80,7 @@
 ### Event-Driven Architecture
 📖 [API_DOCUMENTATION.md](API_DOCUMENTATION.md#eventos-de-domínio)
 - CheckoutEvent
+- UpdateEvent
 - OrderCancelledEvent
 - Fluxos de eventos
 
@@ -87,7 +88,8 @@
 📖 [API_DOCUMENTATION.md](API_DOCUMENTATION.md#arquitetura)
 - Módulos da aplicação
 - Comunicação entre módulos
-- ApplicationModuleListener
+- @EventListener (processamento síncrono)
+- @ApplicationModuleListener (processamento assíncrono)
 
 ### Domain-Driven Design
 📖 [API_DOCUMENTATION.md](API_DOCUMENTATION.md#módulos)
@@ -132,16 +134,16 @@ tail -f logs/application.log
 ### Endpoints Mais Usados
 ```bash
 # Adicionar ao carrinho
-POST /api/carts
+POST /carts
 
 # Fazer checkout
-POST /api/carts/user/{userId}/checkout
+POST /carts/user/{user}/checkout
 
 # Listar pedidos
-GET /api/orders/user/{userId}
+GET /orders/user/{user}
 
 # Cancelar pedido
-POST /api/orders/{id}/cancel
+POST /orders/{id}/cancel
 ```
 
 ### Queries SQL Úteis
