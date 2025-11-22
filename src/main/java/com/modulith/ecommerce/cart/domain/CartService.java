@@ -10,7 +10,6 @@ import com.modulith.ecommerce.exception.InvalidOperationException;
 import com.modulith.ecommerce.common.PaymentMethod;
 import com.modulith.ecommerce.product.ProductDTO;
 import com.modulith.ecommerce.product.ProductModuleAPI;
-import com.modulith.ecommerce.user.UserModuleAPI;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,8 +34,6 @@ public class CartService {
     private final CartRepository repository;
 
     private final ProductModuleAPI productModule;
-
-    private final UserModuleAPI userModule;
 
     private final ApplicationEventPublisher eventPublisher;
 
