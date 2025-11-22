@@ -50,10 +50,6 @@ public class OrderService {
         return repository.findByUserId(id).stream().map(this::buildOrderDTO).toList();
     }
 
-    public List<OrderDTO> getAllOrders(){
-        return repository.findAll().stream().map(this::buildOrderDTO).toList();
-    }
-
     public List<OrderDTO> getAllOrders(Pageable pageable){
         return repository.findAll(pageable)
                 .map(this::buildOrderDTO)

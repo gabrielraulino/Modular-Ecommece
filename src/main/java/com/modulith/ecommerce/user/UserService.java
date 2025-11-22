@@ -21,10 +21,6 @@ public class UserService implements UserModuleAPI {
         return repository.findById(id).map(UserDTO::fromEntity).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
-    public List<UserDTO> findAll() {
-        return repository.findAll().stream().map(UserDTO::fromEntity).toList();
-    }
-
     public List<UserDTO> findAll(Pageable pageable) {
         return repository.findAll(pageable)
                 .map(UserDTO::fromEntity)

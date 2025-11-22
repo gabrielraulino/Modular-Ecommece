@@ -36,12 +36,6 @@ public class CartService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public List<CartDTO> getAllCarts() {
-        return repository.findAll().stream()
-                .map(this::buildCartDTO)
-                .toList();
-    }
-
     public List<CartDTO> getAllCarts(Pageable pageable) {
         return repository.findAll(pageable)
                 .map(this::buildCartDTO)
@@ -164,12 +158,10 @@ public class CartService {
         productModule.validateProductsStock(productQuantities);
 
         List<CheckoutEvent.CheckoutItem> checkoutItems = cart.getItems().stream()
-                .map(item -> {
-                    return new CheckoutEvent.CheckoutItem(
-                            item.getProductId(),
-                            item.getQuantity()
-                    );
-                })
+                .map(item -> new CheckoutEvent.CheckoutItem(
+                        item.getProductId(),
+                        item.getQuantity()
+                ))
                 .toList();
 
         // Publish checkout event
