@@ -21,7 +21,7 @@ public class OrderController {
 
     private final AuthModuleAPI authModuleAPI;
 
-    @GetMapping("/all")
+    @GetMapping()
     @Operation(summary = "Get all orders with pagination")
     public List<OrderDTO> findAllOrders(
             @ParameterObject
