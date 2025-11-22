@@ -4,10 +4,9 @@ import com.modulith.ecommerce.exception.DuplicateResourceException;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +15,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class UserService implements UserModuleAPI {
     private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserDTO findById(Long id) {
         return repository.findById(id).map(UserDTO::fromEntity).orElseThrow(() -> new ResourceNotFoundException("User", id));
@@ -36,7 +36,7 @@ public class UserService implements UserModuleAPI {
                 user.name(),
                 Role.USER,
                 user.email(),
-                hashPassword(user.password()), // hash the password (temporary solution)
+                passwordEncoder.encode(user.password()),
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -51,7 +51,7 @@ public class UserService implements UserModuleAPI {
                 user.name(),
                 existingUser.getRole(),
                 user.email(),
-                hashPassword(user.password()), // hash the password (temporary solution)
+                passwordEncoder.encode(user.password()),
                 existingUser.getCreatedAt(),
                 LocalDateTime.now()
         );
@@ -74,24 +74,27 @@ public class UserService implements UserModuleAPI {
         repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error hashing password", e);
-        }
+    @Override
+    public UserLoginDTO findUserByEmail(String email) {
+        return UserLoginDTO.fromEntity(repository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User","email",email)));
     }
 
+    @Override
+    public UserDTO registerUser(String name, String email, String password, Role role) {
+        if (repository.findByEmail(email).isPresent()) {
+            throw new DuplicateResourceException("User already exists with email: " + email);
+        }
+
+        User newUser = new User(
+                null,
+                name,
+                role,
+                email,
+                password,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        return UserDTO.fromEntity(repository.save(newUser));
+    }
 }

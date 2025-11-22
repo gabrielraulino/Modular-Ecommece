@@ -33,18 +33,22 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler({InvalidOperationException.class, ValidationException.class})
+    @ExceptionHandler({InvalidOperationException.class, ValidationException.class, InvalidCredentialsException.class})
     public ResponseEntity<Object> handleBadRequestException(
             RuntimeException ex, WebRequest request) {
 
+        HttpStatus status = ex instanceof InvalidCredentialsException 
+                ? HttpStatus.UNAUTHORIZED 
+                : HttpStatus.BAD_REQUEST;
+
         Map<String, Object> body = createErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                status.value(),
+                status.getReasonPhrase(),
                 ex.getMessage(),
                 request
         );
 
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(body, status);
     }
 
     @ExceptionHandler({InsufficientStockException.class, DuplicateResourceException.class})

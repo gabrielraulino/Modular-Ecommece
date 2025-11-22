@@ -12,4 +12,16 @@ public interface UserModuleAPI {
     Optional<UserDTO> findUserById(Long id);
 
     void validateUserExists(Long id);
+
+    UserLoginDTO findUserByEmail(String email);
+
+    /**
+     * Register a new user with specified role
+     * @param name User name
+     * @param email User email
+     * @param password Encrypted password
+     * @param role User role (USER or ADMIN)
+     * @return Created user DTO
+     */
+    UserDTO registerUser(String name, String email, String password, Role role);
 }
