@@ -186,29 +186,24 @@ public class ProductService implements ProductModuleAPI {
 
         List<Product> products = repository.findAllByIdIn(productIds);
 
-        try {
-            for (OrderCancelledEvent.CancelledItem item : event.items()) {
-                Product product = products.stream()
-                        .filter(p -> p.getId().equals(item.productId()))
-                        .findFirst()
-                        .orElseThrow(() -> new ResourceNotFoundException("Product", item.productId()));
+        for (OrderCancelledEvent.CancelledItem item : event.items()) {
+            Product product = products.stream()
+                    .filter(p -> p.getId().equals(item.productId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Product", item.productId()));
 
-                int oldStock = product.getStock();
-                int newStock = product.getStock() + item.quantity();
+            int oldStock = product.getStock();
+            int newStock = product.getStock() + item.quantity();
 
-                updateProductStock(product, newStock);
+            updateProductStock(product, newStock);
 
-                log.info("Stock restored for product {}: {} -> {} (Incremented by: {})",
-                        product.getId(), oldStock, newStock, item.quantity());
-            }
-
-            log.info("Stock restored successfully for {} products in order {}",
-                    event.items().size(), event.orderId());
-
-        } catch (Exception e) {
-            log.error("Error restoring stock for cancelled order: {}", event.orderId(), e);
-            throw new RuntimeException("Failed to restore stock after cancellation", e);
+            log.info("Stock restored for product {}: {} -> {} (Incremented by: {})",
+                    product.getId(), oldStock, newStock, item.quantity());
         }
+
+        log.info("Stock restored successfully for {} products in order {}",
+                event.items().size(), event.orderId());
+
     }
 
     private void validateStock(int stock) {
