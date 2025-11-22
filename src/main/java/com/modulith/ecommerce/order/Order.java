@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.order;
 
+import com.modulith.ecommerce.payment.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,10 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false)
+    private PaymentMethod paymentMethod;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

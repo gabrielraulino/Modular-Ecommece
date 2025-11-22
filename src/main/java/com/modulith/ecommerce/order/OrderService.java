@@ -2,6 +2,7 @@ package com.modulith.ecommerce.order;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
+import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
@@ -66,7 +67,11 @@ public class OrderService {
                 order.getStatus(),
                 order.getUpdatedAt(),
                 order.getCreatedAt(),
-                items, totalQuantity, totalPrice);
+                items,
+                order.getPaymentMethod(),
+                totalQuantity,
+                totalPrice
+        );
     }
 
     private List<OrderItemDTO> buildOrderItemsDTO(List<OrderItem> items){
@@ -150,6 +155,7 @@ public class OrderService {
                     .status(OrderStatus.PENDING)
                     .updatedAt(LocalDateTime.now())
                     .createdAt(LocalDateTime.now())
+                    .paymentMethod(event.paymentMethod())
                     .build();
 
             Map<Long, Integer> productQuantities = event.items().stream()
@@ -183,6 +189,12 @@ public class OrderService {
             // Save the order
             Order savedOrder = repository.save(order);
 
+        OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(
+                savedOrder.getId()
+        );
+
+        eventPublisher.publishEvent(orderCreatedEvent);
+
             log.info("Order created successfully. ID: {}, User: {}",
                     savedOrder.getId(), savedOrder.getUserId());
 
@@ -200,6 +212,10 @@ public class OrderService {
 
         if (order.getStatus().equals(OrderStatus.DELIVERED)) {
             throw new InvalidOperationException("cancel order", "cannot cancel a delivered order");
+        }
+
+        if(order.getStatus().equals(OrderStatus.SHIPPED)) {
+            throw new InvalidOperationException("cancel order", "cannot cancel a shipped order");
         }
     }
 }

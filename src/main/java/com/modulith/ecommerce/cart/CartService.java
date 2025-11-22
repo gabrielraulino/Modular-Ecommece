@@ -3,6 +3,7 @@ package com.modulith.ecommerce.cart;
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
+import com.modulith.ecommerce.payment.PaymentMethod;
 import com.modulith.ecommerce.product.ProductDTO;
 import com.modulith.ecommerce.product.ProductModuleAPI;
 import com.modulith.ecommerce.user.UserModuleAPI;
@@ -143,7 +144,7 @@ public class CartService {
     }
 
     @Transactional
-    public ResponseEntity<String> checkout(Long userId) {
+    public ResponseEntity<String> checkout(Long userId, PaymentMethod paymentMethod) {
         userModule.validateUserExists(userId);
 
         Cart cart = findCartByUser(userId);
@@ -168,7 +169,8 @@ public class CartService {
         CheckoutEvent event = new CheckoutEvent(
                 cart.getId(),
                 userId,
-                checkoutItems
+                checkoutItems,
+                paymentMethod
         );
 
             eventPublisher.publishEvent(event);

@@ -1,5 +1,7 @@
 package com.modulith.ecommerce.event;
 
+import com.modulith.ecommerce.payment.PaymentMethod;
+
 import java.util.List;
 
 /**
@@ -11,7 +13,8 @@ import java.util.List;
 public record CheckoutEvent(
         Long cart,
         Long user,
-        List<CheckoutItem> items
+        List<CheckoutItem> items,
+        PaymentMethod paymentMethod
 ) {
     /**
      * Checkout item representing a product and its quantity.

@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.cart;
 
+import com.modulith.ecommerce.payment.PaymentMethod;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +29,11 @@ public class CartController {
     }
 
     @PostMapping("/user/{userId}/checkout")
-    public ResponseEntity<String> checkout(@PathVariable Long userId) {
-        return service.checkout(userId);
+    public ResponseEntity<String> checkout(
+            @PathVariable Long userId,
+            @RequestParam PaymentMethod paymentMethod
+    ) {
+        return service.checkout(userId, paymentMethod);
     }
 
 }
