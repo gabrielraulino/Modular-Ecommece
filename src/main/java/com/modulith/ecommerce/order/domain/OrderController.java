@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.order.domain;
 
+import com.modulith.ecommerce.auth.AuthModuleAPI;
 import com.modulith.ecommerce.order.OrderDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,8 @@ import java.util.List;
 public class OrderController {
     private final OrderService orderService;
 
+    private final AuthModuleAPI authModuleAPI;
+
     @GetMapping("/all")
     @Operation(summary = "Get all orders with pagination")
     public List<OrderDTO> findAllOrders(
@@ -27,17 +30,22 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get order by ID")
     public OrderDTO findById(@PathVariable Long id){
         return orderService.findById(id);
     }
 
-    @GetMapping("/user/{id}")
-    public List<OrderDTO> findByUserId(@PathVariable Long id){
-        return orderService.findByUserId(id);
+    @GetMapping("/user")
+    @Operation(summary = "Get current user's orders")
+    public List<OrderDTO> getCurrentUserOrders(){
+        Long userId = authModuleAPI.getCurrentUserId();
+        return orderService.findByUserId(userId);
     }
 
     @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel order by ID")
     public OrderDTO cancelOrder(@PathVariable Long id) {
-        return orderService.cancelOrder(id);
+        Long userId = authModuleAPI.getCurrentUserId();
+        return orderService.cancelOrder(id, userId);
     }
 }

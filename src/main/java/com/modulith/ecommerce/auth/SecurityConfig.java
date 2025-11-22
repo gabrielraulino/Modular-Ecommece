@@ -40,10 +40,10 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/products", "/products/{id}").permitAll()
 
                         // User endpoints (requires USER or ADMIN role)
-                        .requestMatchers("GET", "/orders/user/{id}").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("GET", "/orders/user").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("POST", "/orders/{id}/cancel").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("GET", "/carts/user/{id}").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("POST", "/carts/user/{userId}/checkout").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("GET", "/carts/user").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("POST", "/carts/checkout").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("PUT", "/carts").hasAnyRole("USER", "ADMIN")
 
                         // Admin endpoints (requires ADMIN role)

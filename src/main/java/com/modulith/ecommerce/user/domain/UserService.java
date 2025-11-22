@@ -72,13 +72,13 @@ public class UserService implements UserModuleAPI {
     }
 
     @Override
-    public void validateUserExists(Long id) {
-        repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
+    public UserLoginDTO findUserByEmail(String email) {
+        return UserLoginDTO.fromEntity(repository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User","email",email)));
     }
 
     @Override
-    public UserLoginDTO findUserByEmail(String email) {
-        return UserLoginDTO.fromEntity(repository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User","email",email)));
+    public Optional<Long> findUserIdByEmail(String email) {
+        return repository.findByEmail(email).map(User::getId);
     }
 
     @Override

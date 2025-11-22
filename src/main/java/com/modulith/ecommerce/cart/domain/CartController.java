@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.cart.domain;
 
+import com.modulith.ecommerce.auth.AuthModuleAPI;
 import com.modulith.ecommerce.cart.AddCartItemDTO;
 import com.modulith.ecommerce.cart.CartDTO;
 import com.modulith.ecommerce.common.PaymentMethod;
@@ -21,10 +22,13 @@ import java.util.List;
 public class CartController {
     private final CartService service;
 
+    private final AuthModuleAPI authModuleAPI;
+
     @PutMapping
     @Operation(summary = "Add or update item in cart")
     public CartDTO addOrUpdateItem(@RequestBody AddCartItemDTO cartData) {
-        return service.addOrUpdateItem(cartData);
+        Long userId = authModuleAPI.getCurrentUserId();
+        return service.addOrUpdateItem(userId, cartData);
     }
 
     @GetMapping
@@ -35,16 +39,19 @@ public class CartController {
         return service.getAllCarts(pageable);
     }
 
-    @GetMapping("/user/{id}")
-    public CartDTO getCartByUserId(@PathVariable Long id) {
-        return service.getCartUserById(id);
+    @GetMapping("/user")
+    @Operation(summary = "Get current user's cart")
+    public CartDTO getCurrentUserCart() {
+        Long userId = authModuleAPI.getCurrentUserId();
+        return service.getCartUserById(userId);
     }
 
-    @PostMapping("/user/{userId}/checkout")
+    @PostMapping("/checkout")
+    @Operation(summary = "Checkout current user's cart")
     public ResponseEntity<String> checkout(
-            @PathVariable Long userId,
             @RequestParam PaymentMethod paymentMethod
     ) {
+        Long userId = authModuleAPI.getCurrentUserId();
         return service.checkout(userId, paymentMethod);
     }
 

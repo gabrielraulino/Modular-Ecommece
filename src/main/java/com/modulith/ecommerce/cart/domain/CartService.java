@@ -49,17 +49,16 @@ public class CartService {
     // returns cart by user id, or an empty cart if none exists
     public CartDTO getCartUserById(Long id) {
         Cart cart = repository.findCartByUserId(id)
-                .orElseGet(Cart::new);
+                .orElseGet(() -> new Cart(null, id, LocalDateTime.now(), null));
         return buildCartDTO(cart);
     }
 
-    public CartDTO addOrUpdateItem(AddCartItemDTO cartData) {
-        userModule.validateUserExists(cartData.userId());
+    public CartDTO addOrUpdateItem(Long userId, AddCartItemDTO cartData) {
 
         productModule.validateProductStock(cartData.productId(), cartData.quantity());
 
-        Cart cart = repository.findCartByUserId(cartData.userId()).orElseGet(() -> {
-            Cart newCart = new Cart(null, cartData.userId(), LocalDateTime.now(), null);
+        Cart cart = repository.findCartByUserId(userId).orElseGet(() -> {
+            Cart newCart = new Cart(null, userId, LocalDateTime.now(), null);
             return repository.save(newCart);
         });
 
@@ -150,7 +149,6 @@ public class CartService {
 
     @Transactional
     public ResponseEntity<String> checkout(Long userId, PaymentMethod paymentMethod) {
-        userModule.validateUserExists(userId);
 
         Cart cart = findCartByUser(userId);
 

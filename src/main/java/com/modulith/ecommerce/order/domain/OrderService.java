@@ -6,6 +6,7 @@ import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
+import com.modulith.ecommerce.auth.AuthModuleAPI;
 import com.modulith.ecommerce.order.OrderDTO;
 import com.modulith.ecommerce.order.OrderItemDTO;
 import com.modulith.ecommerce.order.OrderStatus;
@@ -41,6 +42,8 @@ public class OrderService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final ProductModuleAPI productModule;
+
+    private final AuthModuleAPI authModuleAPI;
 
 
     public OrderDTO findById(Long id){
@@ -117,10 +120,13 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderDTO cancelOrder(Long orderId) {
-        log.info("Starting order cancellation: {}", orderId);
+    public OrderDTO cancelOrder(Long orderId, Long userId) {
+        log.info("Starting order cancellation: {} by user: {}", orderId, userId);
 
         Order order = findOrderById(orderId);
+
+        // Validate that the user owns the order (unless admin)
+        validateOrderOwnership(order, userId);
 
         validateOrderStatusToCancel(order);
 
@@ -209,6 +215,18 @@ public class OrderService {
     private Order findOrderById(Long id){
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", id));
+    }
+
+    private void validateOrderOwnership(Order order, Long userId) {
+        // Admins can cancel any order
+        if (authModuleAPI.isAdmin()) {
+            return;
+        }
+        
+        // Regular users can only cancel their own orders
+        if (!order.getUserId().equals(userId)) {
+            throw new InvalidOperationException("cancel order", "user can only cancel their own orders");
+        }
     }
 
     private void validateOrderStatusToCancel(Order order){
