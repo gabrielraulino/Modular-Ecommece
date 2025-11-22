@@ -31,8 +31,10 @@ public class UserService implements UserModuleAPI {
         User newUser = new User(
                 null,
                 user.name(),
+                Role.USER,
                 user.email(),
                 hashPassword(user.password()), // hash the password (temporary solution)
+                LocalDateTime.now(),
                 LocalDateTime.now()
         );
         return UserDTO.fromEntity(repository.save(newUser));
@@ -44,9 +46,11 @@ public class UserService implements UserModuleAPI {
         User updatedUser = new User(
                 existingUser.getId(),
                 user.name(),
+                existingUser.getRole(),
                 user.email(),
                 hashPassword(user.password()), // hash the password (temporary solution)
-                existingUser.getCreatedAt()
+                existingUser.getCreatedAt(),
+                LocalDateTime.now()
         );
 
         return UserDTO.fromEntity(repository.save(updatedUser));

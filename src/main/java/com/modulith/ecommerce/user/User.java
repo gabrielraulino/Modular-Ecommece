@@ -19,6 +19,10 @@ public class User {
     @Column(name = "name", nullable = false)
     private final String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private final Role role;
+
     @Column(name = "email", nullable = false, unique = true)
     private final String email;
 
@@ -27,4 +31,7 @@ public class User {
 
     @Column(name = "created_at")
     private final LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private final LocalDateTime updatedAt;
 }
