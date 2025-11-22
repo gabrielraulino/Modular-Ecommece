@@ -1,12 +1,12 @@
 package com.modulith.ecommerce.order;
 
 public enum OrderStatus {
-    PENDING("Pending"),
-    PROCESSING("Processing"),
-    SHIPPED("Shipped"),
-    DELIVERED("Delivered"),
-    CANCELLED("Cancelled");
+    PENDING(),
+    PROCESSING(),
+    SHIPPED(),
+    DELIVERED(),
+    CANCELLED();
 
-    OrderStatus(String description) {
+    OrderStatus() {
     }
 }
