@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Exceção lançada quando não há estoque suficiente para uma operação.
- * Retorna HTTP 409 Conflict.
+ * Exception thrown when there is not enough stock for an operation.
+ * Returns HTTP 409 Conflict.
  */
 @ResponseStatus(HttpStatus.CONFLICT)
 public class InsufficientStockException extends RuntimeException {

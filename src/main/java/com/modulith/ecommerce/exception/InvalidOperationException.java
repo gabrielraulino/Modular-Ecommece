@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Exceção lançada quando uma operação é inválida ou não permitida.
- * Retorna HTTP 400 Bad Request.
+ * Exception thrown when an operation is invalid or not allowed.
+ * Returns HTTP 400 Bad Request.
  */
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class InvalidOperationException extends RuntimeException {

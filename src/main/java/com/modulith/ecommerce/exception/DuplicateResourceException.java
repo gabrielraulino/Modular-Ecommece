@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Exceção lançada quando se tenta criar um recurso que já existe.
- * Retorna HTTP 409 Conflict.
+ * Exception thrown when trying to create a resource that already exists.
+ * Returns HTTP 409 Conflict.
  */
 @ResponseStatus(HttpStatus.CONFLICT)
 public class DuplicateResourceException extends RuntimeException {

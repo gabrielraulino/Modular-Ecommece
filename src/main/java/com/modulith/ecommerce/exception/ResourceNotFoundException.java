@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Exceção lançada quando um recurso não é encontrado.
- * Retorna HTTP 404 Not Found.
+ * Exception thrown when a resource is not found.
+ * Returns HTTP 404 Not Found.
  */
 @ResponseStatus(HttpStatus.NOT_FOUND)
 public class ResourceNotFoundException extends RuntimeException {
