@@ -1,5 +1,7 @@
-package com.modulith.ecommerce.user;
+package com.modulith.ecommerce.user.domain;
 
+import com.modulith.ecommerce.user.UserCreateDTO;
+import com.modulith.ecommerce.user.UserDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package com.modulith.ecommerce.user;
+package com.modulith.ecommerce.user.domain;
 
 import java.util.Optional;
 

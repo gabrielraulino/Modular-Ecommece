@@ -1,6 +1,8 @@
-package com.modulith.ecommerce.cart;
+package com.modulith.ecommerce.cart.domain;
 
-import com.modulith.ecommerce.payment.PaymentMethod;
+import com.modulith.ecommerce.cart.AddCartItemDTO;
+import com.modulith.ecommerce.cart.CartDTO;
+import com.modulith.ecommerce.common.PaymentMethod;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;

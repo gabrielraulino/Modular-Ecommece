@@ -1,6 +1,7 @@
-package com.modulith.ecommerce.cart;
+package com.modulith.ecommerce.cart.domain;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.modulith.ecommerce.cart.CartItem;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

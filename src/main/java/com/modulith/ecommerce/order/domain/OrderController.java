@@ -1,5 +1,6 @@
-package com.modulith.ecommerce.order;
+package com.modulith.ecommerce.order.domain;
 
+import com.modulith.ecommerce.order.OrderDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;

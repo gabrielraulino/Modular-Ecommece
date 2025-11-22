@@ -1,6 +1,6 @@
 package com.modulith.ecommerce.event;
 
-import com.modulith.ecommerce.payment.PaymentMethod;
+import com.modulith.ecommerce.common.PaymentMethod;
 
 import java.util.List;
 

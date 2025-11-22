@@ -1,4 +1,4 @@
-package com.modulith.ecommerce.cart;
+package com.modulith.ecommerce.cart.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

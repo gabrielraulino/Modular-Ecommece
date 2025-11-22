@@ -1,10 +1,13 @@
-package com.modulith.ecommerce.product;
+package com.modulith.ecommerce.product.domain;
 
 import com.modulith.ecommerce.event.OrderCancelledEvent;
 import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.ValidationException;
 import com.modulith.ecommerce.exception.InsufficientStockException;
+import com.modulith.ecommerce.product.CreateProductDTO;
+import com.modulith.ecommerce.product.ProductDTO;
+import com.modulith.ecommerce.product.ProductModuleAPI;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;

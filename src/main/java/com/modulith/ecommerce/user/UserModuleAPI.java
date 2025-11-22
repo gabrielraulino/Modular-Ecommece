@@ -1,5 +1,7 @@
 package com.modulith.ecommerce.user;
 
+import com.modulith.ecommerce.common.Role;
+
 import java.util.Optional;
 
 public interface UserModuleAPI {

@@ -1,4 +1,4 @@
-package com.modulith.ecommerce.product;
+package com.modulith.ecommerce.product.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

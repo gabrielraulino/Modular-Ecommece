@@ -1,6 +1,7 @@
 package com.modulith.ecommerce.cart;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.modulith.ecommerce.cart.domain.Cart;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

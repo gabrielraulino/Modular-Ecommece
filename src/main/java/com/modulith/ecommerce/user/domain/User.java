@@ -1,4 +1,5 @@
-package com.modulith.ecommerce.user;
+package com.modulith.ecommerce.user.domain;
+import com.modulith.ecommerce.common.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

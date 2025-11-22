@@ -1,4 +1,4 @@
-package com.modulith.ecommerce.order;
+package com.modulith.ecommerce.order.domain;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
@@ -6,6 +6,9 @@ import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
+import com.modulith.ecommerce.order.OrderDTO;
+import com.modulith.ecommerce.order.OrderItemDTO;
+import com.modulith.ecommerce.order.OrderStatus;
 import com.modulith.ecommerce.product.ProductDTO;
 import com.modulith.ecommerce.product.ProductModuleAPI;
 import com.modulith.ecommerce.user.UserModuleAPI;

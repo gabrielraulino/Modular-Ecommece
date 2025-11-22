@@ -1,9 +1,13 @@
-package com.modulith.ecommerce.cart;
+package com.modulith.ecommerce.cart.domain;
 
+import com.modulith.ecommerce.cart.AddCartItemDTO;
+import com.modulith.ecommerce.cart.CartDTO;
+import com.modulith.ecommerce.cart.CartItem;
+import com.modulith.ecommerce.cart.CartItemDTO;
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
-import com.modulith.ecommerce.payment.PaymentMethod;
+import com.modulith.ecommerce.common.PaymentMethod;
 import com.modulith.ecommerce.product.ProductDTO;
 import com.modulith.ecommerce.product.ProductModuleAPI;
 import com.modulith.ecommerce.user.UserModuleAPI;

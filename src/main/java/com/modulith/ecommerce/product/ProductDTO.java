@@ -1,5 +1,7 @@
 package com.modulith.ecommerce.product;
 
+import com.modulith.ecommerce.product.domain.Product;
+
 import java.math.BigDecimal;
 
 public record ProductDTO(

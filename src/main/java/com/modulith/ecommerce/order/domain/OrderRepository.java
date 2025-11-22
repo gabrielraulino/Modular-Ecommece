@@ -1,4 +1,4 @@
-package com.modulith.ecommerce.order;
+package com.modulith.ecommerce.order.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -2,7 +2,7 @@ package com.modulith.ecommerce.auth;
 
 import com.modulith.ecommerce.exception.InvalidCredentialsException;
 import com.modulith.ecommerce.exception.ValidationException;
-import com.modulith.ecommerce.user.Role;
+import com.modulith.ecommerce.common.Role;
 import com.modulith.ecommerce.user.UserLoginDTO;
 import com.modulith.ecommerce.user.UserDTO;
 import com.modulith.ecommerce.user.UserModuleAPI;

@@ -4,6 +4,8 @@ import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.event.OrderProcessedEvent;
 import com.modulith.ecommerce.event.OrderShippedEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
+import com.modulith.ecommerce.order.domain.Order;
+import com.modulith.ecommerce.order.domain.OrderRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

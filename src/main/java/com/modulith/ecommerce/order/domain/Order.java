@@ -1,6 +1,7 @@
-package com.modulith.ecommerce.order;
+package com.modulith.ecommerce.order.domain;
 
-import com.modulith.ecommerce.payment.PaymentMethod;
+import com.modulith.ecommerce.order.OrderStatus;
+import com.modulith.ecommerce.common.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.user;
 
+import com.modulith.ecommerce.user.domain.User;
 import lombok.Builder;
 
 import java.time.LocalDateTime;

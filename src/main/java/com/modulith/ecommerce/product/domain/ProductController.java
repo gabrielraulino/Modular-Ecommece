@@ -1,5 +1,7 @@
-package com.modulith.ecommerce.product;
+package com.modulith.ecommerce.product.domain;
 
+import com.modulith.ecommerce.product.CreateProductDTO;
+import com.modulith.ecommerce.product.ProductDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;

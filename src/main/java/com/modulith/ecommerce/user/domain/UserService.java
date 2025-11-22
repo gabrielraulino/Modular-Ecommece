@@ -1,7 +1,9 @@
-package com.modulith.ecommerce.user;
+package com.modulith.ecommerce.user.domain;
 
+import com.modulith.ecommerce.common.Role;
 import com.modulith.ecommerce.exception.DuplicateResourceException;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
+import com.modulith.ecommerce.user.*;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -1,4 +1,4 @@
-package com.modulith.ecommerce.product;
+package com.modulith.ecommerce.product.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
