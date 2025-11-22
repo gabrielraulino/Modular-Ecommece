@@ -3,6 +3,7 @@ package com.modulith.ecommerce.user;
 import com.modulith.ecommerce.exception.DuplicateResourceException;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
@@ -22,6 +23,12 @@ public class UserService implements UserModuleAPI {
 
     public List<UserDTO> findAll() {
         return repository.findAll().stream().map(UserDTO::fromEntity).toList();
+    }
+
+    public List<UserDTO> findAll(Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(UserDTO::fromEntity)
+                .getContent();
     }
 
     public UserDTO saveUser(UserCreateDTO user) {

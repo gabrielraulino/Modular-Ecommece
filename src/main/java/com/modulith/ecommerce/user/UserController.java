@@ -1,6 +1,11 @@
 package com.modulith.ecommerce.user;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -8,17 +13,22 @@ import java.util.List;
 @RequestMapping("/users")
 @RestController
 @AllArgsConstructor
+@Tag(name = "Users", description = "User management endpoints")
 public class UserController {
     private final UserService service;
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by ID")
     public UserDTO getUserById(@PathVariable Long id) {
         return service.findById(id);
     }
 
     @GetMapping()
-    public List<UserDTO> getAllUsers() {
-        return service.findAll();
+    @Operation(summary = "Get all users with pagination")
+    public List<UserDTO> getAllUsers(
+            @ParameterObject
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return service.findAll(pageable);
     }
 
     @PostMapping()

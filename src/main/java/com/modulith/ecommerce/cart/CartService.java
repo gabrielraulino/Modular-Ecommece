@@ -10,6 +10,7 @@ import com.modulith.ecommerce.user.UserModuleAPI;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,12 @@ public class CartService {
         return repository.findAll().stream()
                 .map(this::buildCartDTO)
                 .toList();
+    }
+
+    public List<CartDTO> getAllCarts(Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(this::buildCartDTO)
+                .getContent();
     }
 
     // returns cart by user id, or an empty cart if none exists

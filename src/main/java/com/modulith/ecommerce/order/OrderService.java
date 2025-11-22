@@ -2,8 +2,8 @@ package com.modulith.ecommerce.order;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
-import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.event.UpdateEvent;
+import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
 import com.modulith.ecommerce.product.ProductDTO;
@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +52,12 @@ public class OrderService {
 
     public List<OrderDTO> getAllOrders(){
         return repository.findAll().stream().map(this::buildOrderDTO).toList();
+    }
+
+    public List<OrderDTO> getAllOrders(Pageable pageable){
+        return repository.findAll(pageable)
+                .map(this::buildOrderDTO)
+                .getContent();
     }
 
     private OrderDTO buildOrderDTO(Order order){

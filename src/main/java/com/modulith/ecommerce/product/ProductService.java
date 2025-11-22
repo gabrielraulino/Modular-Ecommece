@@ -8,6 +8,8 @@ import com.modulith.ecommerce.exception.InsufficientStockException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,12 @@ public class ProductService implements ProductModuleAPI {
 
     public List<ProductDTO> getAllProducts() {
         return repository.findAll().stream().map(ProductDTO::fromEntity).toList();
+    }
+
+    public List<ProductDTO> getAllProducts(Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(ProductDTO::fromEntity)
+                .getContent();
     }
 
     public ProductDTO saveProduct(CreateProductDTO productDTO) {
