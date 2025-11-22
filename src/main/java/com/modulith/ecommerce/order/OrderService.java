@@ -3,7 +3,6 @@ package com.modulith.ecommerce.order;
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
 import com.modulith.ecommerce.event.UpdateEvent;
-import com.modulith.ecommerce.exception.InsufficientStockException;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
 import com.modulith.ecommerce.product.ProductDTO;
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

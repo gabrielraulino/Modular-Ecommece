@@ -1,7 +1,6 @@
 package com.modulith.ecommerce.cart;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
-import com.modulith.ecommerce.exception.InsufficientStockException;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
 import com.modulith.ecommerce.product.ProductDTO;
@@ -154,7 +153,7 @@ public class CartService {
         Map<Long, Integer> productQuantities = cart.getItems().stream()
                 .collect(Collectors.toMap(CartItem::getProductId, CartItem::getQuantity));
 
-//        productModule.validateProductsStock(productQuantities);
+        productModule.validateProductsStock(productQuantities);
 
         List<CheckoutEvent.CheckoutItem> checkoutItems = cart.getItems().stream()
                 .map(item -> {
