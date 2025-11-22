@@ -112,11 +112,6 @@ public class ProductService implements ProductModuleAPI {
 
 
     @Override
-    public Optional<ProductDTO> findProductById(Long productId) {
-        return repository.findById(productId).map(ProductDTO::fromEntity);
-    }
-
-    @Override
     public List<ProductDTO> findAllProductsByIds(Set<Long> productIds) {
         return repository.findAllByIdIn(productIds).stream()
                 .map(ProductDTO::fromEntity)
@@ -124,7 +119,7 @@ public class ProductService implements ProductModuleAPI {
     }
 
     @Override
-    public ProductDTO validateProductStock(Long productId, int requiredQuantity) {
+    public void validateProductStock(Long productId, int requiredQuantity) {
         Optional<Product> product = repository.findById(productId);
 
         if (product.isEmpty()) {
@@ -135,7 +130,6 @@ public class ProductService implements ProductModuleAPI {
             throw new InsufficientStockException(product.get().getName(), requiredQuantity, product.get().getStock());
         }
 
-        return product.map(ProductDTO::fromEntity).get();
     }
 
     @Override
