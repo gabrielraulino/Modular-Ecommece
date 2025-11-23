@@ -69,11 +69,7 @@ public class ProductService implements ProductModuleAPI {
     }
 
     public void deleteProduct(Long id) {
-        try {
-            repository.deleteById(id);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Product not found");
-        }
+        repository.delete(getProductById(id));
     }
 
     public ProductDTO updateProductStock(Long id, int newStock) {
@@ -212,4 +208,8 @@ public class ProductService implements ProductModuleAPI {
         }
     }
 
+    private Product getProductById(Long product) {
+        return repository.findById(product)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", product));
+    }
 }
