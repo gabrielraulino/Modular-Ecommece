@@ -4,13 +4,13 @@ pipeline {
     // Variáveis de ambiente para configuração
     environment {
         // Docker
-        DOCKER_REGISTRY = credentials('docker-registry-url')
         DOCKER_IMAGE_NAME = 'ecommerce'
         DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
         
         // Aplicação
         APP_NAME = 'ecommerce'
         APP_VERSION = "${env.BUILD_NUMBER}"
+        APP_PORT = '8081'
     }
     
     // Opções do pipeline
@@ -91,14 +91,20 @@ pipeline {
                     def startTime = System.currentTimeMillis()
                     echo "📤 Fazendo push da imagem para registry..."
                     
-                    docker.withRegistry("https://${DOCKER_REGISTRY}") {
-                        docker.image("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}").push()
-                        docker.image("${DOCKER_IMAGE_NAME}:latest").push()
+                    // Tentar usar credencial, se não existir, pular push
+                    try {
+                        def registry = credentials('docker-registry-url')
+                        docker.withRegistry("https://${registry}") {
+                            docker.image("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}").push()
+                            docker.image("${DOCKER_IMAGE_NAME}:latest").push()
+                        }
+                        def duration = System.currentTimeMillis() - startTime
+                        echo "✅ Push concluído em ${duration}ms (${duration/1000}s)"
+                        env.DOCKER_PUSH_TIME = duration
+                    } catch (Exception e) {
+                        echo "⚠️ Credencial docker-registry-url não configurada. Pulando push."
+                        env.DOCKER_PUSH_TIME = 0
                     }
-                    
-                    def duration = System.currentTimeMillis() - startTime
-                    echo "✅ Push concluído em ${duration}ms (${duration/1000}s)"
-                    env.DOCKER_PUSH_TIME = duration
                 }
             }
         }
@@ -146,14 +152,14 @@ services:
       DATABASE_PASSWORD: \${POSTGRES_PASSWORD:-postgres}
       JWT_SECRET: \${JWT_SECRET:-your-secret-key-change-this-in-production-min-256-bits}
       ADMIN_KEY: \${ADMIN_KEY:-}
-      SERVER_PORT: 8080
+      SERVER_PORT: 8081
     ports:
-      - "8080:8080"
+      - "8081:8081"
     networks:
       - ecommerce-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -178,11 +184,11 @@ networks:
                     '''
                     
                     // Aguardar aplicação ficar pronta
-                    sh '''
+                    sh """
                         echo "⏳ Aguardando aplicação ficar pronta..."
-                        timeout 120 bash -c 'until curl -f http://localhost:8080/actuator/health 2>/dev/null; do sleep 2; done' || exit 1
+                        timeout 120 bash -c 'until curl -f http://localhost:${APP_PORT}/actuator/health 2>/dev/null; do sleep 2; done' || exit 1
                         echo "✅ Aplicação está pronta!"
-                    '''
+                    """
                     
                     def duration = System.currentTimeMillis() - startTime
                     echo "✅ Deploy concluído em ${duration}ms (${duration/1000}s)"
@@ -198,10 +204,10 @@ networks:
                     def startTime = System.currentTimeMillis()
                     echo "🏥 Verificando saúde da aplicação..."
                     
-                    sh '''
-                        curl -f http://localhost:8080/actuator/health || exit 1
+                    sh """
+                        curl -f http://localhost:${APP_PORT}/actuator/health || exit 1
                         echo "✅ Aplicação está saudável!"
-                    '''
+                    """
                     
                     def duration = System.currentTimeMillis() - startTime
                     echo "✅ Health check concluído em ${duration}ms (${duration/1000}s)"
@@ -241,10 +247,11 @@ networks:
 """
                 
                 // Salvar métricas em arquivo para análise
+                def timestamp = sh(script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"', returnStdout: true).trim()
                 writeFile file: 'deploy-metrics.json', text: """
 {
   "buildNumber": "${env.BUILD_NUMBER}",
-  "timestamp": "${new Date().toInstant()}",
+  "timestamp": "${timestamp}",
   "gitCommit": "${env.GIT_COMMIT ?: 'N/A'}",
   "branch": "${env.BRANCH_NAME ?: 'N/A'}",
   "metrics": {
@@ -269,8 +276,14 @@ networks:
             echo "❌ Pipeline falhou!"
         }
         cleanup {
-            // Limpar workspace se necessário
-            cleanWs()
+            // Limpar workspace se necessário (apenas se houver contexto)
+            script {
+                try {
+                    cleanWs()
+                } catch (Exception e) {
+                    echo "⚠️ Não foi possível limpar workspace: ${e.message}"
+                }
+            }
         }
     }
 }
