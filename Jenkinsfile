@@ -4,7 +4,7 @@ pipeline {
     // Variáveis de ambiente para configuração
     environment {
         // Docker
-        DOCKER_REGISTRY = credentials('docker-registry-url') ?: 'localhost:5000'
+        DOCKER_REGISTRY = credentials('docker-registry-url')
         DOCKER_IMAGE_NAME = 'ecommerce'
         DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
         
