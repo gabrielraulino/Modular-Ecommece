@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("GET", "/products", "/products/{id}").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
 
                         // User endpoints (requires USER or ADMIN role)
                         .requestMatchers("GET", "/orders/user").hasAnyRole("USER", "ADMIN")
