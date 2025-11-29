@@ -28,8 +28,7 @@ public class UserController {
     @GetMapping()
     @Operation(summary = "Get all users with pagination")
     public List<UserDTO> getAllUsers(
-            @ParameterObject
-            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         return service.findAll(pageable);
     }
 
@@ -47,6 +46,5 @@ public class UserController {
     public void deleteUser(@PathVariable Long id) {
         service.deleteUser(id);
     }
-
 
 }
