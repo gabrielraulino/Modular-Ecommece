@@ -1,5 +1,6 @@
 package com.modulith.ecommerce.user.domain;
 
+import com.modulith.ecommerce.auth.AuthModuleAPI;
 import com.modulith.ecommerce.user.UserCreateDTO;
 import com.modulith.ecommerce.user.UserDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,8 @@ import java.util.List;
 @Tag(name = "Users", description = "User management endpoints")
 public class UserController {
     private final UserService service;
+
+    private final AuthModuleAPI authModuleAPI;
 
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID")
@@ -47,4 +50,16 @@ public class UserController {
         service.deleteUser(id);
     }
 
+    @GetMapping("/me")
+    @Operation(summary = "Get current user")
+    public UserDTO getCurrentUser() {
+        return service.findById(authModuleAPI.getCurrentUserId());
+    }
+
+    @PutMapping("/me")
+    @Operation(summary = "Update current user")
+    public UserDTO updateCurrentUser(@RequestBody UserCreateDTO user) {
+        Long currentUserId = authModuleAPI.getCurrentUserId();
+        return service.updateUser(currentUserId, user);
+    }
 }

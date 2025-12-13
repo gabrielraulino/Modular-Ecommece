@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/carts/user").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("POST", "/carts/checkout").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("PUT", "/carts").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("GET", "/users/me").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("PUT", "/users/me").hasAnyRole("USER", "ADMIN")
 
                         // Admin endpoints (requires ADMIN role)
                         .requestMatchers("/users/**").hasRole("ADMIN")
