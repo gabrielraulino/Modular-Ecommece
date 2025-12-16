@@ -109,10 +109,10 @@ POST /orders/1/cancel
 ### Checkout
 ```
 Cliente → Checkout → CheckoutEvent
-                    └─► OrderService (cria pedido)
-                        └─► UpdateEvent
-                            └─► ProductService (decrementa estoque)
+                    ├─► OrderService (cria pedido)
+                    └─► ProductService (decrementa estoque)
 ```
+**Nota:** A validação de estoque ocorre antes da publicação do evento. Order e Product consomem o CheckoutEvent diretamente.
 
 ### Cancelamento
 ```
@@ -197,7 +197,7 @@ curl http://localhost:8080/orders/user/1
 
 ### Estoque
 - **Adicionar ao carrinho**: Não afeta estoque
-- **Checkout**: Valida estoque antes e decrementa automaticamente (via UpdateEvent)
+- **Checkout**: Valida estoque antes da publicação do evento e decrementa automaticamente (via CheckoutEvent)
 - **Cancelar pedido**: Restaura estoque automaticamente (via OrderCancelledEvent)
 
 ### Pedidos

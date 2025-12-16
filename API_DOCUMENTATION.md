@@ -140,7 +140,7 @@ Sistema de e-commerce desenvolvido seguindo a arquitetura **Modular Monolith** u
 **Event Listeners:**
 ```java
 @EventListener
-void onCheckoutEvent(UpdateEvent event)
+void onCheckoutEvent(CheckoutEvent event)
 // Decrementa estoque quando checkout é realizado
 
 @ApplicationModuleListener
@@ -218,7 +218,6 @@ CANCELLED    // Cancelado
 @EventListener
 void onCheckoutEvent(CheckoutEvent event)
 // Cria pedido quando checkout é realizado
-// Publica UpdateEvent para atualização de estoque
 ```
 
 ---
@@ -234,7 +233,8 @@ void onCheckoutEvent(CheckoutEvent event)
 public record CheckoutEvent(
     Long cart,
     Long user,
-    List<CheckoutItem> items
+    List<CheckoutItem> items,
+    PaymentMethod paymentMethod
 ) {
     public record CheckoutItem(
         Long product,
@@ -243,18 +243,11 @@ public record CheckoutEvent(
 }
 ```
 **Publicado por:** CartService.checkout()  
-**Consumido por:** OrderService (cria pedido e publica UpdateEvent)
+**Consumido por:** 
+- OrderService (cria pedido automaticamente)
+- ProductService (decrementa estoque automaticamente)
 
-#### UpdateEvent
-```java
-public record UpdateEvent(
-    Long cart,
-    Long user,
-    Map<Long, Integer> productQuantities
-) {}
-```
-**Publicado por:** OrderService.onCheckoutEvent()  
-**Consumido por:** ProductService (decrementa estoque)
+**Nota:** Os produtos são validados antes da publicação do evento, garantindo segurança e evitando conflitos. A validação ocorre no CartService antes de publicar o CheckoutEvent.
 
 #### OrderCancelledEvent
 ```java
@@ -282,16 +275,18 @@ public record OrderCancelledEvent(
 3. CartService publica CheckoutEvent
                     ↓
 4. OrderService.onCheckoutEvent() escuta evento
-   ├─ Cria Order
-   └─ Publica UpdateEvent
+   └─ Cria Order automaticamente
                     ↓
-5. ProductService.onCheckoutEvent() escuta UpdateEvent
+5. ProductService.onCheckoutEvent() escuta evento
    └─ Decrementa estoque (batch update)
                     ↓
 6. Cliente ← Carrinho vazio (resposta imediata)
 ```
 
-**Nota:** O processamento é síncrono usando `@EventListener`, garantindo que falhas causem rollback da transação.
+**Nota:** 
+- O processamento é síncrono usando `@EventListener`, garantindo que falhas causem rollback da transação.
+- A validação de estoque ocorre **antes** da publicação do evento, garantindo segurança e evitando conflitos.
+- Ambos os módulos (Order e Product) consomem o mesmo CheckoutEvent diretamente, simplificando a arquitetura.
 
 ### Fluxo de Cancelamento
 
@@ -607,15 +602,17 @@ curl -X POST http://localhost:8080/carts/user/1/checkout
 ```
 
 **O que acontece nos bastidores:**
-1. ✅ Validação de estoque (validateProductsStock)
-2. ✅ CheckoutEvent publicado
-3. ✅ OrderService cria pedido (síncrono via @EventListener)
-4. ✅ UpdateEvent publicado pelo OrderService
-5. ✅ ProductService decrementa estoque (síncrono via @EventListener)
-6. ✅ Carrinho limpo (cart_items deletados via orphanRemoval)
-7. ✅ Cliente recebe resposta imediata
+1. ✅ Validação de estoque (validateProductsStock) - **antes** da publicação do evento
+2. ✅ CheckoutEvent publicado pelo CartService
+3. ✅ OrderService cria pedido automaticamente (síncrono via @EventListener)
+4. ✅ ProductService decrementa estoque automaticamente (síncrono via @EventListener)
+5. ✅ Carrinho limpo (cart_items deletados via orphanRemoval)
+6. ✅ Cliente recebe resposta imediata
 
-**Importante:** Se qualquer etapa falhar, toda a transação faz rollback, garantindo consistência.
+**Importante:** 
+- Se qualquer etapa falhar, toda a transação faz rollback, garantindo consistência.
+- A validação de estoque ocorre antes da publicação do evento, evitando conflitos e garantindo segurança.
+- Ambos os módulos (Order e Product) consomem o mesmo CheckoutEvent diretamente, simplificando a arquitetura.
 
 #### 6. Aguardar Processamento
 ```bash

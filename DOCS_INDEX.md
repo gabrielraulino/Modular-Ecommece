@@ -80,7 +80,6 @@
 ### Event-Driven Architecture
 📖 [API_DOCUMENTATION.md](API_DOCUMENTATION.md#eventos-de-domínio)
 - CheckoutEvent
-- UpdateEvent
 - OrderCancelledEvent
 - Fluxos de eventos
 

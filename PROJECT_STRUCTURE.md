@@ -104,7 +104,6 @@ src/main/java/com/modulith/ecommerce/
 │
 └── 📡 event/                                    [Eventos de Domínio]
     ├── CheckoutEvent.java                       [Evento de checkout] ⭐
-    ├── UpdateEvent.java                         [Evento de atualização de estoque] ⭐
     └── OrderCancelledEvent.java                 [Evento de cancelamento] ⭐
 ```
 
@@ -128,7 +127,8 @@ public class EcommerceApplication {
 public record CheckoutEvent(
     Long cart,
     Long user,
-    List<CheckoutItem> items
+    List<CheckoutItem> items,
+    PaymentMethod paymentMethod
 ) {
     public record CheckoutItem(
         Long product,
@@ -137,18 +137,11 @@ public record CheckoutEvent(
 }
 ```
 **Função:** Evento publicado quando checkout é realizado  
-**Consumido por:** OrderService (cria pedido e publica UpdateEvent)
+**Consumido por:** 
+- OrderService (cria pedido automaticamente)
+- ProductService (decrementa estoque automaticamente)
 
-### 2.1. UpdateEvent.java ⭐
-```java
-public record UpdateEvent(
-    Long cart,
-    Long user,
-    Map<Long, Integer> productQuantities
-) {}
-```
-**Função:** Evento publicado pelo OrderService para atualização de estoque  
-**Consumido por:** ProductService (decrementa estoque)
+**Nota:** A validação de estoque ocorre antes da publicação do evento, garantindo segurança e evitando conflitos.
 
 ---
 
@@ -185,7 +178,6 @@ public CartDTO checkout(Long userId) {
 @EventListener
 public void onCheckoutEvent(CheckoutEvent event) {
     // Cria pedido a partir do evento
-    // Publica UpdateEvent para atualização de estoque
 }
 ```
 **Função:** Listener que cria pedido automaticamente (processamento síncrono)
@@ -195,7 +187,7 @@ public void onCheckoutEvent(CheckoutEvent event) {
 ### 6. ProductService.onCheckoutEvent() ⭐
 ```java
 @EventListener
-public void onCheckoutEvent(UpdateEvent event) {
+public void onCheckoutEvent(CheckoutEvent event) {
     // Decrementa estoque dos produtos (batch update)
 }
 ```
@@ -306,17 +298,18 @@ public void onOrderCancelledEvent(OrderCancelledEvent event) {
    ↓ checkout(userId)
 3. CartService
    ├─ Valida carrinho
-   ├─ Valida estoque (validateProductsStock - batch)
+   ├─ Valida estoque (validateProductsStock - batch) ⚠️ ANTES da publicação
    ├─ Publica CheckoutEvent
    ├─ Limpa cart_items (orphanRemoval)
    └─ Atualiza carts.updated_at
    ↓
 4. OrderService.onCheckoutEvent() (@EventListener - síncrono)
-   ├─ Cria Order e OrderItems
-   └─ Publica UpdateEvent
+   └─ Cria Order e OrderItems
    ↓
 5. ProductService.onCheckoutEvent() (@EventListener - síncrono)
    └─ UPDATE products SET stock = stock - quantity (batch)
+   
+**Nota:** Ambos os listeners (OrderService e ProductService) consomem o mesmo CheckoutEvent diretamente.
 ```
 
 **Nota:** Processamento síncrono garante que falhas causem rollback completo da transação.
