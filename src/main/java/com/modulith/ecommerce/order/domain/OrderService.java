@@ -2,7 +2,6 @@ package com.modulith.ecommerce.order.domain;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
-import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
@@ -169,20 +168,6 @@ public class OrderService {
                     .createdAt(LocalDateTime.now())
                     .paymentMethod(event.paymentMethod())
                     .build();
-
-            Map<Long, Integer> productQuantities = event.items().stream()
-                    .collect(java.util.stream.Collectors.toMap(
-                            CheckoutEvent.CheckoutItem::product,
-                            CheckoutEvent.CheckoutItem::quantity
-                    ));
-
-            UpdateEvent updateProductEvent = new UpdateEvent(
-                    event.cart(),
-                    event.user(),
-                    productQuantities
-            );
-
-            eventPublisher.publishEvent(updateProductEvent);
 
             // Create order items
             List<OrderItem> orderItems = event.items().stream()

@@ -1,7 +1,7 @@
 package com.modulith.ecommerce.product.domain;
 
+import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
-import com.modulith.ecommerce.event.UpdateEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.ValidationException;
 import com.modulith.ecommerce.exception.InsufficientStockException;
@@ -146,21 +146,27 @@ public class ProductService implements ProductModuleAPI {
     }
 
     @EventListener
-    public void onCheckoutEvent(UpdateEvent event) {
+    public void onCheckoutEvent(CheckoutEvent event) {
         log.info("Processing stock update for checkout. Cart: {}, User: {}",
                 event.cart(), event.user());
 
-        List<Product> products = repository.findAllByIdIn(event.productQuantities().keySet());
+        Map<Long, Integer> productQuantities = event.items().stream()
+                .collect(Collectors.toMap(
+                        CheckoutEvent.CheckoutItem::product,
+                        CheckoutEvent.CheckoutItem::quantity
+                ));
+
+        List<Product> products = repository.findAllByIdIn(productQuantities.keySet());
 
         products.forEach(product -> {
-            int requiredQuantity = event.productQuantities().get(product.getId());
+            int requiredQuantity = productQuantities.get(product.getId());
             if (product.getStock() < requiredQuantity) {
                 throw new InsufficientStockException(product.getName(), requiredQuantity, product.getStock());
             }
         });
 
         List<Product> updatedProducts = products.stream().map(product -> {
-            int requiredQuantity = event.productQuantities().get(product.getId());
+            int requiredQuantity = productQuantities.get(product.getId());
             int newStock = product.getStock() - requiredQuantity;
             log.info("Stock updated for product {}: {} -> {} (Decremented by: {})",
                     product.getId(), product.getStock(), newStock, requiredQuantity);
@@ -168,7 +174,7 @@ public class ProductService implements ProductModuleAPI {
         }).toList();
 
         log.info("Stock updated successfully for {} products in cart {}",
-                event.productQuantities().size(), event.cart());
+                productQuantities.size(), event.cart());
         repository.saveAll(updatedProducts);
 
     }
