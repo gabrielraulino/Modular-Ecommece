@@ -2,7 +2,6 @@ package com.modulith.ecommerce.order.domain;
 
 import com.modulith.ecommerce.event.CheckoutEvent;
 import com.modulith.ecommerce.event.OrderCancelledEvent;
-import com.modulith.ecommerce.event.OrderCreatedEvent;
 import com.modulith.ecommerce.exception.ResourceNotFoundException;
 import com.modulith.ecommerce.exception.InvalidOperationException;
 import com.modulith.ecommerce.auth.AuthModuleAPI;
@@ -11,7 +10,6 @@ import com.modulith.ecommerce.order.OrderItemDTO;
 import com.modulith.ecommerce.order.OrderStatus;
 import com.modulith.ecommerce.product.ProductDTO;
 import com.modulith.ecommerce.product.ProductModuleAPI;
-import com.modulith.ecommerce.user.UserModuleAPI;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,8 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
     private final OrderRepository repository;
 
-    private final UserModuleAPI userModuleAPI;
-
     private final ApplicationEventPublisher eventPublisher;
 
     private final ProductModuleAPI productModule;
@@ -50,8 +46,6 @@ public class OrderService {
     }
 
     public List<OrderDTO> findByUserId(Long id){
-        userModuleAPI.findUserById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
-
         return repository.findByUserId(id).stream().map(this::buildOrderDTO).toList();
     }
 
@@ -185,12 +179,6 @@ public class OrderService {
 
             // Save the order
             Order savedOrder = repository.save(order);
-
-        OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(
-                savedOrder.getId()
-        );
-
-        eventPublisher.publishEvent(orderCreatedEvent);
 
             log.info("Order created successfully. ID: {}, User: {}",
                     savedOrder.getId(), savedOrder.getUserId());
